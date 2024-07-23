@@ -151,6 +151,7 @@ int foo_d()
   printf("%6d\t%6d\t%6d\n", chars, words, lines);
 }
 
+// Imprimir cada palabra en lineas diferentes
 void foo_e()
 {
   int c;
@@ -164,9 +165,100 @@ void foo_e()
   }
 }
 
+// Contar el numero de caracteres por grupos: blancos (tabs, spaces y lineas), digitos y otros (alfabeticos).
+void foo_f()
+{
+  int i, nwhite, nother, ndigits[10];
+  nwhite = nother = 0;
+  for (i = 0; i < 10; ++i)
+    ndigits[i] = 0;
+
+  int c;
+  while ((c = getchar()) != EOF)
+  {
+    if (c >= '0' && c <= '9')
+      ++ndigits[c - '0'];
+    else if (c == ' ' || c == '\n' || c == '\t')
+      ++nwhite;
+    else
+      ++nother;
+  }
+
+  printf("\nDigit\tCount\tWhites\tOther\n");
+  for (i = 0; i < 10; ++i)
+  {
+    printf("%1d\t%5d", i, ndigits[i]);
+    if (i == 0)
+      printf("\t%5d\t%5d\n", nwhite, nother);
+    else
+      printf("\n");
+  }
+}
+
+void foo_g()
+{
+  const int out = 0, in = 1;
+  int w = 3, wl[w];
+  int c;
+  int i, j, gh = 10, state;
+
+  for (i = 0; i < w; ++i)
+  {
+    state = in;
+    wl[i] = 0;
+    printf("Word [%d]: ", i);
+    while ((c = getchar()) != '\n')
+    {
+      if (state == in && c != '\t' && c != ' ')
+        ++wl[i];
+      else
+        state = out;
+    }
+  }
+
+  for (j = gh; j > 0; --j)
+  {
+    for (i = 0; i < w; ++i)
+    {
+      if (wl[i] >= j)
+        putchar('#');
+      else
+        putchar(' ');
+    }
+    putchar('\n');
+  }
+}
+
+void foo_h()
+{
+  int l = 3, nc[l];
+  int c;
+  int i, j, gh = 10;
+
+  for (i = 0; i < l; ++i)
+  {
+    nc[i] = 0;
+    printf("Line [%d]: ", i);
+    while ((c = getchar()) != '\n')
+      ++nc[i];
+  }
+
+  for (j = gh; j > 0; --j)
+  {
+    for (i = 0; i < l; ++i)
+    {
+      if (nc[i] >= j)
+        putchar('#');
+      else
+        putchar(' ');
+    }
+    putchar('\n');
+  }
+}
+
 int main()
 {
-  char_counter();
+  foo_h();
 
   return 0;
 }
