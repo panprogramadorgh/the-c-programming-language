@@ -1,30 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Lector de entrada estandar que almacena una cadena de longitud varialbe
-char *input(char *message)
-{
-  printf("%s", message);
-
-  int index, c;
-  char *buffer = (char *)malloc(sizeof(char));
-
-  for (index = 0; (c = getchar()) != '\n'; ++index)
-  {
-    if (index == 0)
-    {
-      *buffer = c;
-      continue;
-    }
-    buffer = (char *)realloc(buffer, (index + 1) * sizeof(char));
-    *(buffer + index) = c;
-  }
-
-  return buffer;
-}
-
 // Contador de caracteres de espacio, tabulacion y salto de linea
-void char_counter()
+void count_tabs_spaces_lines()
 {
   int tabs = 0, spaces = 0, lines = 0;
   int c;
@@ -44,7 +22,7 @@ void char_counter()
 }
 
 // Lee escribir la entrada eliminando exceso de espacios.
-void foo_a()
+void read_truncated()
 {
   int c, prev;
   c = getchar();
@@ -63,7 +41,7 @@ void foo_a()
 }
 
 // Reemplazo de escapes de caracter por su forma literal en una constante de cadena
-void foo_b()
+void literal_char_space()
 {
   int c;
   while ((c = getchar()) != EOF)
@@ -80,7 +58,7 @@ void foo_b()
 }
 
 // Contador de palabras con verificacion del caracter previo
-void foo_c()
+void prev_count_words()
 {
   /* Variables locales de
   almacenaje de caracter */
@@ -122,7 +100,7 @@ void foo_c()
 }
 
 // Contador de palabras con verificacion de estado (dentro de palabra || fuera de palabra)
-int foo_d()
+int state_count_words()
 {
   const int in = 1;
   const int out = 2;
@@ -152,7 +130,7 @@ int foo_d()
 }
 
 // Imprimir cada palabra en lineas diferentes
-void foo_e()
+void print_word_per_line()
 {
   int c;
 
@@ -166,7 +144,7 @@ void foo_e()
 }
 
 // Contar el numero de caracteres por grupos: blancos (tabs, spaces y lineas), digitos y otros (alfabeticos).
-void foo_f()
+void count_blanks_numbers_others()
 {
   int i, nwhite, nother, ndigits[10];
   nwhite = nother = 0;
@@ -195,7 +173,8 @@ void foo_f()
   }
 }
 
-void foo_g()
+// Cuenta el numero de caracteres de las tres palabras que se ingresan y dibuja un grafico vertical ASCII representando la longitud de cada palabra
+void print_words_length()
 {
   const int out = 0, in = 1;
   int w = 3, wl[w];
@@ -229,7 +208,8 @@ void foo_g()
   }
 }
 
-void foo_h()
+// Cuenta el numero de caracteres de cada linea ingresada y dibuja un grafico vertical representando la longitud de cada linea
+void print_lines_length()
 {
   int l = 3, nc[l];
   int c;
@@ -258,7 +238,7 @@ void foo_h()
 
 int main()
 {
-  foo_h();
+  print_lines_length();
 
   return 0;
 }
