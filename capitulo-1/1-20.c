@@ -30,7 +30,9 @@ las tabulaciones */
 /* Permite obtener texto de la entrada
 estandar reemplazando las tabulaciones
 por cuantos espacios sea necesario para
-alcanzar el siguiente paro de tabulacion. */
+alcanzar el siguiente paro de tabulacion.
+La funcion retorna la longitud del nuevo
+texto sin tabulaciones. */
 int get_detabed_input(char arr[], int maxlength);
 
 /* Permite calcular multiplos de `m` donde
@@ -110,10 +112,10 @@ int calc_next_multiple(int m, int n)
 {
   int i;
 
-  if (n <= m)
+  if (n < m)
     return 1;
 
-  for (i = 2; i * m < n; ++i)
+  for (i = 2; i * m <= n; ++i)
     ;
   return i;
 }

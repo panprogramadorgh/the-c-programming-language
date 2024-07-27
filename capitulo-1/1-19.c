@@ -31,6 +31,9 @@ int reverse_line(char from[], int from_length, char to[], int maxto);
 */
 int get_line_length(char line[]);
 
+/* Programa para leer lineas de
+la estandard input y mostrarlas todas
+dadas la vuelta. */
 int main()
 {
   char process_state = 0;
