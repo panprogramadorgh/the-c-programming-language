@@ -57,35 +57,56 @@ destino (`to`). */
 void copy(char from[], char to[]);
 
 /* TODO: Permite obtener el indice de inicio
-y fin de un comentario del lenguaje
-de programacion C, dentro del array de
-caracteres `from`. Para buscar la secuencia
-de caracteres de inicio y fin se tiene
-en cuenta factores como que dichas secuencias
-no se encuentren dentro de una constante
-de caracter. */
-int find_comment(char from[], int maxlength);
+de un comentario del lenguaje de programacion
+C, dentro del array de caracteres `from`.
+Para buscar la secuencia de caracteres de
+inicio se tiene en cuenta factores como
+que dicha secuencia no se encuentre dentro
+de una constante de caracter. */
+int find_comment_start(char from[], int maxlength);
+
+/* TODO: Permite obtener el indice de inicio
+de un comentario del lenguaje de programacion
+C, dentro del array de caracteres `from`.
+Para buscar la secuencia de caracteres de
+inicio se tiene en cuenta factores como
+que dicha secuencia no se encuentre dentro
+de una constante de caracter. */
+int find_comment_end(char from[], int maxlength);
+
+/* Permite comprobar que `n` sea multiplo
+de `m`. Si la funcion retorna ` quiere decir
+que si lo es y si retorna 0 quiere decir que no. */
+int is_multiple_of(int m, int n);
 
 /* Programa para eliminar comentarios
 de un programa de C. */
 int main()
 {
-  char arr[MAXINPUT] =
-      "hola /* y */ adios";
-  int length, start, end;
+  // char arr[MAXINPUT] =
+  //     "hola /* y */ adios";
+  // int length, start, end;
 
-  if ((length = get_input(arr, MAXINPUT)) > 1)
-  {
-    while ((start = find(arr, CSTART, 0, MAXINPUT)) > -1)
-    {
-      end = find(arr, CEND, start, MAXINPUT);
-      if (end == -1)
-        end = length - 1;
-      displace_chars(arr, MAXINPUT, start,
-                     -((end - start) + get_length(CEND)));
-    }
-    printf("%s\n", arr);
-  }
+  // if ((length = get_input(arr, MAXINPUT)) > 1)
+  // {
+  //   while ((start = find(arr, CSTART, 0, MAXINPUT)) > -1)
+  //   {
+  //     end = find(arr, CEND, start, MAXINPUT);
+  //     if (end == -1)
+  //       end = length - 1;
+  //     displace_chars(arr, MAXINPUT, start,
+  //                    -((end - start) + get_length(CEND)));
+  //   }
+  //   printf("%s\n", arr);
+  // }
+
+  int m = 8;
+  int n = 80;
+  int is;
+
+  is = is_multiple_of(m, n);
+
+  printf("%d\n", is);
 
   return 0;
 }
@@ -215,4 +236,23 @@ void copy(char from[], char to[])
 
   for (i = 0; (to[i] = from[i]) != '\0'; ++i)
     ;
+}
+
+// int find_comment_start(char from[], int maxlength)
+// {
+//   find(from, "\"", 0, maxlength);
+// }
+
+int is_multiple_of(int m, int n)
+{
+  int p, i, is;
+
+  is = 0;
+
+  for (p = i = 1; p < n; ++i)
+  {
+    if ((p = m * i) == n)
+      is = 1;
+  }
+  return is;
 }
