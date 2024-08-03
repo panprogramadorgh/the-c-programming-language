@@ -2,8 +2,10 @@
 
 /* Determina la maxima cantidad
 de caracteres de entrada para
-la funcion `get_input`.  */
-#define MAXINPUT 1024
+la funcion `get_input` asi
+como la longitud maxima de muchos
+arrays de todo el programa.  */
+#define MAX 1024
 
 /* Hace referencia a la forma
 de iniciar un comentario en
@@ -39,7 +41,7 @@ int compare(char a[], char b[]);
 /* Permite obtener un extracto de un
 array de caracteres en base a un indice
 de comienzo y fin. */
-void stract(char from[], char to[], int maxlength, int start, int end);
+void slice(char from[], char to[], int maxto, int start, int end);
 
 /* Permite obtener la longitud
 de un array de caracteres. */
@@ -56,57 +58,55 @@ origen (`from`) en un array de caracteres
 destino (`to`). */
 void copy(char from[], char to[]);
 
-/* TODO: Permite obtener el indice de inicio
+/* TODO: Permite obtener el indice de inicio o fin
 de un comentario del lenguaje de programacion
 C, dentro del array de caracteres `from`.
 Para buscar la secuencia de caracteres de
 inicio se tiene en cuenta factores como
 que dicha secuencia no se encuentre dentro
-de una constante de caracter. */
-int find_comment_start(char from[], int maxlength);
-
-/* TODO: Permite obtener el indice de inicio
-de un comentario del lenguaje de programacion
-C, dentro del array de caracteres `from`.
-Para buscar la secuencia de caracteres de
-inicio se tiene en cuenta factores como
-que dicha secuencia no se encuentre dentro
-de una constante de caracter. */
-int find_comment_end(char from[], int maxlength);
+de una constante de caracter. Los posibles
+valores para `seq` provienen de las constantes
+simbolicas `CSTART` y `CEND`. */
+int find_comment(char from[], int offset, int maxlength, char seq[]);
 
 /* Permite comprobar que `n` sea multiplo
 de `m`. Si la funcion retorna ` quiere decir
 que si lo es y si retorna 0 quiere decir que no. */
 int is_multiple_of(int m, int n);
 
+/* Permite contar todas las apariciones
+de un caracter concreto `c` dentro
+de un array de caracteres `from`.
+Se debe indicar la longitud maxima
+del array. */
+int count(char from[], char tar[], int maxlength);
+
 /* Programa para eliminar comentarios
 de un programa de C. */
 int main()
 {
-  // char arr[MAXINPUT] =
+  // FIXME: Logica para eliminar comentarios
+  // char arr[MAX] =
   //     "hola /* y */ adios";
   // int length, start, end;
 
-  // if ((length = get_input(arr, MAXINPUT)) > 1)
+  // if ((length = get_input(arr, MAX)) > 1)
   // {
-  //   while ((start = find(arr, CSTART, 0, MAXINPUT)) > -1)
+  //   while ((start = find(arr, CSTART, 0, MAX)) > -1)
   //   {
-  //     end = find(arr, CEND, start, MAXINPUT);
+  //     end = find(arr, CEND, start, MAX);
   //     if (end == -1)
   //       end = length - 1;
-  //     displace_chars(arr, MAXINPUT, start,
-  //                    -((end - start) + get_length(CEND)));
+  //     displace_chars(arr, MAX, start,
+  //                    -((end - start) + get_length(CEND) - 1));
   //   }
   //   printf("%s\n", arr);
   // }
 
-  int m = 8;
-  int n = 80;
-  int is;
+  char arr[MAX] =
+      "hola /* comentario */ que tal";
 
-  is = is_multiple_of(m, n);
-
-  printf("%d\n", is);
+  find_comment(arr, 0, MAX, CSTART);
 
   return 0;
 }
@@ -131,9 +131,12 @@ int find(char from[], char tar[], int offset, int maxlength)
 
   index = -1;
 
+  if (offset >= maxlength)
+    return -1;
+
   for (i = offset; index == -1 && i < maxlength && from[i] != '\0'; ++i)
   {
-    stract(from, tartry, maxlength, i, i + tarlength);
+    slice(from, tartry, maxlength, i, i + tarlength);
     eq = compare(tartry, tar);
     if (eq == 1)
       index = i;
@@ -162,10 +165,15 @@ int compare(char a[], char b[])
   return eq;
 }
 
-void stract(char from[], char to[], int maxlength, int start, int end)
+// FIXME: Cosas raras con slice.
+
+void slice(char from[], char to[], int maxto, int start, int end)
 {
-  int i;
-  for (i = start; i < end; ++i)
+  int i, length;
+
+  length = end - start;
+
+  for (i = start; i < end && i - start < maxto - 1; ++i)
     to[i - start] = from[i];
   to[i - start] = '\0';
 }
@@ -175,7 +183,8 @@ int get_length(char arr[])
   int i;
   for (i = 0; arr[i] != '\0'; ++i)
     ;
-  return i;
+  /* Se cuenta el caracter nulo */
+  return i + 1;
 }
 
 int displace_chars(char arr[], int maxlength, int index, int d)
@@ -238,10 +247,27 @@ void copy(char from[], char to[])
     ;
 }
 
-// int find_comment_start(char from[], int maxlength)
-// {
-//   find(from, "\"", 0, maxlength);
-// }
+int find_comment(char from[], int offset, int maxlength, char seq[])
+{
+  int pos = find(from, seq, offset, maxlength);
+  char some_slice[pos];
+
+  /* TODO: Obtener slice desde la posicion 0
+  hasta la posicion en la que se encontro `seq`. */
+
+  /* TODO: Contar numero de apariciones para
+  el caracter quot ("). */
+
+  /* TODO: Comprobar si dicha cantidad es
+  multiplo de 2, en cuyo caso la secuencia
+  de comentario estaria a fuera de una constante
+  de caracter y por lo tanto seria una posicion
+  para una secuencia de comentario valida. */
+
+  // slice(from, some_slice, pos, 0, pos - 1);
+
+  printf("%s\n", some_slice);
+}
 
 int is_multiple_of(int m, int n)
 {
@@ -255,4 +281,20 @@ int is_multiple_of(int m, int n)
       is = 1;
   }
   return is;
+}
+
+int count(char from[], char tar[], int maxlength)
+{
+  int pos, ccount;
+
+  pos = ccount = 0;
+
+  while (pos > -1 && pos < maxlength)
+  {
+    pos = find(from, tar, pos + 1, maxlength);
+    if (pos > -1)
+      ++ccount;
+  }
+
+  return ccount;
 }
