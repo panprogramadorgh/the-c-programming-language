@@ -105,8 +105,11 @@ int main()
 
   char arr[MAX] =
       "hola /* comentario */ que tal";
+  int index;
 
-  find_comment(arr, 0, MAX, CSTART);
+  index = find(arr, "que", 0, MAX);
+
+  printf("%d\n", index);
 
   return 0;
 }
@@ -119,6 +122,8 @@ int get_input(char arr[], int maxlength)
   arr[i] = '\0';
   return i + 1;
 }
+
+// FIXME: Cosas raras en find. Creo que por la funcion slice, que la he modificado recientemente.
 
 int find(char from[], char tar[], int offset, int maxlength)
 {
@@ -165,15 +170,15 @@ int compare(char a[], char b[])
   return eq;
 }
 
-// FIXME: Cosas raras con slice.
-
 void slice(char from[], char to[], int maxto, int start, int end)
 {
   int i, length;
 
   length = end - start;
 
-  for (i = start; i < end && i - start < maxto - 1; ++i)
+  for (i = start;
+       i < end && from[i] != '\0' && i - start < maxto - 1;
+       ++i)
     to[i - start] = from[i];
   to[i - start] = '\0';
 }
@@ -264,7 +269,7 @@ int find_comment(char from[], int offset, int maxlength, char seq[])
   de caracter y por lo tanto seria una posicion
   para una secuencia de comentario valida. */
 
-  // slice(from, some_slice, pos, 0, pos - 1);
+  slice(from, some_slice, pos, 0, pos - 1);
 
   printf("%s\n", some_slice);
 }
