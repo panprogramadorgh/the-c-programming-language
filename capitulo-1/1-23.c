@@ -48,7 +48,10 @@ de comienzo y fin. */
 void slice(char from[], char to[], int maxto, int start, int end);
 
 /* Permite obtener la longitud
-de un array de caracteres. */
+de un array de caracteres.
+A la hora de contar los caracteres
+del array, la funcion tambien
+cuenta el caracter nulo. */
 int get_length(char arr[]);
 
 /* Permite desplazar los caracteres
@@ -85,40 +88,33 @@ Se debe indicar la longitud maxima
 del array. */
 int count(char from[], char tar[], int maxlength);
 
+/* Contiene el texto a ser evaluado
+por el programa para la eliminacion
+de los comentarios. */
+char text[MAX];
+
 /* Programa para eliminar comentarios
 de un programa de C. */
 int main()
 {
-  // FIXME: Logica para eliminar comentarios
-  // char arr[MAX] =
-  //     "hola /* y */ adios";
-  // int length, start, end;
+  extern char text[MAX];
+  int length, start, end, d;
 
-  // if ((length = get_input(arr, MAX)) > 1)
-  // {
-  //   while ((start = find(arr, CSTART, 0, MAX)) > -1)
-  //   {
-  //     end = find(arr, CEND, start, MAX);
-  //     if (end == -1)
-  //       end = length - 1;
-  //     displace_chars(arr, MAX, start,
-  //                    -((end - start) + get_length(CEND) - 1));
-  //   }
-  //   printf("%s\n", arr);
-  // }
+  start = end = d = 0;
 
-  // char arr[MAX] =
-  //     "hola \"/*\" /* comentario */ que tal";
-  char arr[MAX] =
-      "h1234h";
-  int pos;
+  if ((length = get_input(text, MAX)) > 1)
+  {
+    while ((start = find_comment(text, end - d, MAX, CSTART)) > -1)
+    {
+      end = find_comment(text, start, MAX, CEND);
+      if (end == -1)
+        end = length - 1;
 
-  /* TODO: Arreglar funcion count.
-  Por algun motivo no tiene en cuenta
-  el primer caracter de la cadena. */
-  pos = count(arr, "h", MAX);
-
-  printf("%d\n", pos);
+      d = (end - start) + (get_length(CEND) - 1);
+      displace_chars(text, MAX, start, -d);
+    }
+    printf("%s\n", text);
+  }
 
   return 0;
 }
@@ -262,20 +258,11 @@ void copy(char from[], char to[])
 int find_comment(char from[], int offset, int maxlength, char seq[])
 {
   int pos;
-  char some_slice[pos];
+  char some_slice[maxlength];
   int dbquots, is_multi;
 
+  is_multi = 0;
   pos = find(from, seq, offset, maxlength);
-
-  if (pos == -1)
-    return -1;
-
-  slice(from, some_slice, pos, 0, pos - 1);
-  dbquots = count(some_slice, "\"", pos);
-  is_multi = is_multiple_of(2, dbquots);
-
-  putchar(from[pos - 1]);
-  putchar('\n');
 
   /* Si la cantidad de quots
   no es multiplo de dos, quiere
@@ -284,8 +271,16 @@ int find_comment(char from[], int offset, int maxlength, char seq[])
   encuentra dentro de una constante
   de caracter y por lo tanto no es
   valida. */
-  if (is_multi == 0)
-    return -1;
+  while (is_multi == 0 && pos > -1)
+  {
+    slice(from, some_slice, pos + 1, 0, pos);
+
+    dbquots = count(some_slice, "\"", pos + 1);
+    is_multi = is_multiple_of(2, dbquots);
+
+    if (is_multi == 0)
+      pos = find(from, seq, pos + 1, maxlength);
+  }
 
   return pos;
 }
@@ -296,7 +291,7 @@ int is_multiple_of(int m, int n)
 
   is = 0;
 
-  if (n < 1)
+  if (n == 0)
   {
     is = 1;
     return is;
@@ -315,6 +310,9 @@ int count(char from[], char tar[], int maxlength)
   int pos, ccount;
 
   pos = ccount = 0;
+  pos = find(from, tar, pos, maxlength);
+  if (pos > -1)
+    ++ccount;
 
   while (pos > -1 && pos < maxlength)
   {
