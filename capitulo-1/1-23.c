@@ -30,7 +30,11 @@ Se debe indicar la longitud maxima del
 array de caracteres `from` y un valor
 de desplazamiento `offset` (que debe
 ser 0 en caso de que `from` sea una
-referencia al primer elemento del array). */
+referencia al primer elemento del array).
+La funcion retorna el indice de la aparicion
+dentro del array `from` y el valor -1 en
+caso de no encontrar nada o haber un error
+logico con los argumentos de la funcion. */
 int find(char from[], char tar[], int offset, int maxlength);
 
 /* Permite comprarar dos arrays de
@@ -103,13 +107,18 @@ int main()
   //   printf("%s\n", arr);
   // }
 
+  // char arr[MAX] =
+  //     "hola \"/*\" /* comentario */ que tal";
   char arr[MAX] =
-      "hola /* comentario */ que tal";
-  int index;
+      "h1234h";
+  int pos;
 
-  index = find(arr, "que", 0, MAX);
+  /* TODO: Arreglar funcion count.
+  Por algun motivo no tiene en cuenta
+  el primer caracter de la cadena. */
+  pos = count(arr, "h", MAX);
 
-  printf("%d\n", index);
+  printf("%d\n", pos);
 
   return 0;
 }
@@ -123,16 +132,14 @@ int get_input(char arr[], int maxlength)
   return i + 1;
 }
 
-// FIXME: Cosas raras en find. Creo que por la funcion slice, que la he modificado recientemente.
-
 int find(char from[], char tar[], int offset, int maxlength)
 {
-  int eq, index, tarlength;
+  int eq, index, tlength;
   int i, j;
 
-  tarlength = get_length(tar);
+  tlength = get_length(tar);
 
-  char tartry[tarlength];
+  char ttry[tlength];
 
   index = -1;
 
@@ -141,8 +148,8 @@ int find(char from[], char tar[], int offset, int maxlength)
 
   for (i = offset; index == -1 && i < maxlength && from[i] != '\0'; ++i)
   {
-    slice(from, tartry, maxlength, i, i + tarlength);
-    eq = compare(tartry, tar);
+    slice(from, ttry, tlength, i, i + tlength);
+    eq = compare(ttry, tar);
     if (eq == 1)
       index = i;
   }
@@ -254,24 +261,33 @@ void copy(char from[], char to[])
 
 int find_comment(char from[], int offset, int maxlength, char seq[])
 {
-  int pos = find(from, seq, offset, maxlength);
+  int pos;
   char some_slice[pos];
+  int dbquots, is_multi;
 
-  /* TODO: Obtener slice desde la posicion 0
-  hasta la posicion en la que se encontro `seq`. */
+  pos = find(from, seq, offset, maxlength);
 
-  /* TODO: Contar numero de apariciones para
-  el caracter quot ("). */
-
-  /* TODO: Comprobar si dicha cantidad es
-  multiplo de 2, en cuyo caso la secuencia
-  de comentario estaria a fuera de una constante
-  de caracter y por lo tanto seria una posicion
-  para una secuencia de comentario valida. */
+  if (pos == -1)
+    return -1;
 
   slice(from, some_slice, pos, 0, pos - 1);
+  dbquots = count(some_slice, "\"", pos);
+  is_multi = is_multiple_of(2, dbquots);
 
-  printf("%s\n", some_slice);
+  putchar(from[pos - 1]);
+  putchar('\n');
+
+  /* Si la cantidad de quots
+  no es multiplo de dos, quiere
+  decir que la aparicion de la
+  secuencia de comentario se
+  encuentra dentro de una constante
+  de caracter y por lo tanto no es
+  valida. */
+  if (is_multi == 0)
+    return -1;
+
+  return pos;
 }
 
 int is_multiple_of(int m, int n)
@@ -279,6 +295,12 @@ int is_multiple_of(int m, int n)
   int p, i, is;
 
   is = 0;
+
+  if (n < 1)
+  {
+    is = 1;
+    return is;
+  }
 
   for (p = i = 1; p < n; ++i)
   {
