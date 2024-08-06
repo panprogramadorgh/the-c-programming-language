@@ -57,7 +57,10 @@ int get_length(char arr[]);
 /* Permite desplazar los caracteres
 de una cadena de caracteres `d`
 posiciones a partir de `index`.
-El resultado se guarda en el array `to`. */
+El resultado se guarda en el array `to`.
+Retorna los caracteres desplazados
+o -1 en caso de haber un error logico
+con los argumentos. */
 int displace_chars(char arr[], int maxlength, int index, int d);
 
 /* Permite copiar un array de caracteres
@@ -65,7 +68,7 @@ origen (`from`) en un array de caracteres
 destino (`to`). */
 void copy(char from[], char to[]);
 
-/* TODO: Permite obtener el indice de inicio o fin
+/* Permite obtener el indice de inicio o fin
 de un comentario del lenguaje de programacion
 C, dentro del array de caracteres `from`.
 Para buscar la secuencia de caracteres de
@@ -98,19 +101,32 @@ de un programa de C. */
 int main()
 {
   extern char text[MAX];
-  int length, start, end, d;
+  int length, start, end, d, cendl;
 
   start = end = d = 0;
+  cendl = get_length(CEND);
 
   if ((length = get_input(text, MAX)) > 1)
   {
     while ((start = find_comment(text, end - d, MAX, CSTART)) > -1)
     {
       end = find_comment(text, start, MAX, CEND);
-      if (end == -1)
-        end = length - 1;
 
-      d = (end - start) + (get_length(CEND) - 1);
+      /* `cendl - 2` Representa la cantidad
+      de caracteres necesarios como para
+      completar una secuencia de fin de comentario.
+      Por motivos aritmeticos, cuando no hay
+      secuencia de fin de comentario, simplemente
+      dicha cantidad es restada al indice del ultimo
+      caracter no nulo en el array de caracteres.
+      Posteriormente, independientemente de si se
+      encontro o no una secuencia de fin de comentario,
+      esa misma cantidad es sumada al indice de fin.  */
+
+      if (end == -1)
+        end = (length - 2) - (cendl - 2);
+
+      d = ((end + (cendl - 2)) - start) + 1;
       displace_chars(text, MAX, start, -d);
     }
     printf("%s\n", text);
@@ -121,11 +137,19 @@ int main()
 
 int get_input(char arr[], int maxlength)
 {
-  int i, c;
-  for (i = 0; i < maxlength - 1 && (c = getchar()) != EOF; ++i)
-    arr[i] = c;
-  arr[i] = '\0';
-  return i + 1;
+  int i, c, endpos;
+
+  for (i = 0; (c = getchar()) != EOF; ++i)
+  {
+    if (i < maxlength - 1)
+    {
+      arr[i] = c;
+      endpos = i + 1;
+    }
+  }
+  arr[endpos] = '\0';
+
+  return endpos + 1;
 }
 
 int find(char from[], char tar[], int offset, int maxlength)
