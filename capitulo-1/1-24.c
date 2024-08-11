@@ -132,10 +132,10 @@ int main()
   n = split(text, "\n", lines);
 
   printf("%d\n", n);
-  // for (i = 0; i < MAX_LNS; ++i)
-  // {
-  //   printf("%s\n", lines[i]);
-  // }
+  for (i = 0; i < MAX_LNS; ++i)
+  {
+    printf("%s\n", lines[i]);
+  }
 
   return 0;
 }
@@ -220,7 +220,7 @@ int find(char from[], char tar[], int offset)
   return pos;
 }
 
-// FIXME: No lee la ultima linea
+// FIXME: Se corrompe la memoria de pila, no se esta escribiendo correctamente.
 
 int split(char from[], char tar[], char to[MAX_LN_LGTH][MAX_LNS])
 {
@@ -232,42 +232,36 @@ int split(char from[], char tar[], char to[MAX_LN_LGTH][MAX_LNS])
 
   prevtarpos = 0;
   frlgth = len(from);
-  // tarlgth = len(tar);
-  // endswithtar = 0;
+  tarlgth = len(tar);
 
-  // char someslice[tarlgth];
-
-  tarcount = count(from, tar, 0) + 1;
-
-  // slice(from, someslice, tarlgth, frlgth - tarlgth);
-  // endswithtar = compare(tar, someslice);
+  if (tarlgth < 2)
+    return 0;
 
   line = 0;
-  tarpos = find(from, tar, prevtarpos);
-  do
+  while ((tarpos = find(from, tar, prevtarpos)) > -1 && line < MAX_LNS)
   {
-    for (i = prevtarpos; i < tarpos && i < MAX_LN_LGTH; ++i)
+    for (i = prevtarpos; i < tarpos && (i - prevtarpos) < MAX_LN_LGTH - 1; ++i)
     {
-      printf("%d\t%d\n", i - prevtarpos, line);
-      // to[i - prevtarpos][line] = from[i];
+      // printf("%d\t%d\t%c\n", i - prevtarpos, line, from[i]);
+      to[line][i - prevtarpos] = from[i];
     }
+    // printf("%d\t%d\t%c\n", i - prevtarpos, line, from[i]);
+    to[line][i - prevtarpos] = '\0';
 
-    prevtarpos = tarpos + 1;
-    tarpos = find(from, tar, prevtarpos);
-
-    if (tarpos == -1)
-    {
-      for (i = prevtarpos; i < frlgth && i < MAX_LN_LGTH; ++i)
-      {
-        printf("%d\t%d\n", i - prevtarpos, line);
-        // to[i - prevtarpos][line] = from[i];
-      }
-    }
-
+    prevtarpos = tarpos + tarlgth - 1;
     ++line;
-  } while (tarpos > -1 && line < MAX_LNS);
+  }
 
-  return tarcount;
+  /* Rellena la ultima linea para `to` */
+  for (i = prevtarpos; i < frlgth - 2 && (i - prevtarpos) < MAX_LN_LGTH - 1; ++i)
+  {
+    // printf("%d\t%d\t%c\n", i - prevtarpos, line, from[i]);
+    to[line][i - prevtarpos] = from[i];
+  }
+  // printf("%d\t%d\t%c\n", i - prevtarpos, line, from[i]);
+  to[line][i - prevtarpos] = '\0';
+
+  return line + 1;
 }
 
 int compare(char a[], char b[])
