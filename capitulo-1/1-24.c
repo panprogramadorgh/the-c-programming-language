@@ -80,6 +80,7 @@ char correct_syntax[] = "Syntax is correct, nothing to be worried about.";
 char parenthesis_error[] = "Syntax error: missing opening or closing parenthesis.";
 char curly_braces_error[] = "Syntax error: missing opening or closing curly braces.";
 char brackets_error[] = "Syntax error: not aligned brackets.";
+char single_quots_error[] = "Syntax error: malformed single quots char.";
 
 /*
 ## Checkeador de sintaxis basico para codigo fuente de C.
@@ -88,17 +89,31 @@ char brackets_error[] = "Syntax error: not aligned brackets.";
 
 1.      Perentesis                              [S]
 2.      Llaves                                  [S]
-3.      Corchetes alineados (en la misma linea) [S]
-4.      Single quots                            [N]
+3.      Corchetes alineados                     [S]
+4.      Single quots                            [S]
 5.      Double quots                            [N]
-6.      Secuencias de escape (ej. \t)           [N]
+6.      Secuencias de escape                    [N]
 7.      Comentarios                             [N]
+
+Cuando hablamos de corcheste alineados, hablamos de que deben estar en la misma linea.
+
+En el caso de los single quots, se aseume que solamente es valido colocar un solo caracter entre par de single quots, a no ser que el caracter se trate de un caracter escapado como \t.
  */
 int main()
 {
+  /* Variables relacionadas con
+  la entrada. */
   char text[MAXINP];
+  int textlgth;
+
+  /* Almacena cada una de las
+  lineas de la constante de caracter
+  `text`. */
   char lines[MAX_LNS][MAX_LN_LGTH];
   int noflines;
+
+  /* Almacenan las ocurrencias
+  de un caracter determinado. */
   int
       open_parenthesis,
       closed_parenthesis,
@@ -108,6 +123,12 @@ int main()
 
       open_brackets,
       closed_brackets;
+
+  /* Almacenan posiciones de
+  caracteres de quots. */
+  int quotpos, prevquotpos;
+
+  /* Otras variables. */
   int i;
 
   /* Obtener entrada. */
@@ -142,6 +163,31 @@ int main()
       fprintf(stderr, "%s\n", brackets_error);
       return 1;
     }
+  }
+
+  /* Comprobar caracteres con single quots.
+  Se asume que solamente puede haber un
+  unico caracter entre single quots. */
+  prevquotpos = -1;
+  quotpos = find(text, "\'", 0);
+  while (quotpos > -1)
+  {
+    if (prevquotpos > -1)
+    {
+      if (prevquotpos + 3 == quotpos &&
+          text[prevquotpos + 1] == '\\')
+        ; // Caracter escapado entre single quots.
+      else if (prevquotpos + 2 == quotpos)
+        ; // Caracter entre single quots.
+      else
+      {
+        fprintf(stderr, "%s\n", single_quots_error);
+        return 1;
+      }
+    }
+
+    prevquotpos = quotpos;
+    quotpos = find(text, "\'", prevquotpos + 1);
   }
 
   fprintf(stdout, "%s\n", correct_syntax);
