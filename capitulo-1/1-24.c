@@ -79,6 +79,7 @@ int ismultiof(int m, int n);
 char correct_syntax[] = "Syntax is correct, nothing to be worried about.";
 char parenthesis_error[] = "Syntax error: missing opening or closing parenthesis.";
 char curly_braces_error[] = "Syntax error: missing opening or closing curly braces.";
+char brackets_error[] = "Syntax error: not aligned brackets.";
 
 /*
 ## Checkeador de sintaxis basico para codigo fuente de C.
@@ -87,7 +88,7 @@ char curly_braces_error[] = "Syntax error: missing opening or closing curly brac
 
 1.      Perentesis                              [S]
 2.      Llaves                                  [S]
-3.      Corchetes alineados (en la misma linea) [N]
+3.      Corchetes alineados (en la misma linea) [S]
 4.      Single quots                            [N]
 5.      Double quots                            [N]
 6.      Secuencias de escape (ej. \t)           [N]
@@ -97,12 +98,17 @@ int main()
 {
   char text[MAXINP];
   char lines[MAX_LNS][MAX_LN_LGTH];
+  int noflines;
   int
       open_parenthesis,
       closed_parenthesis,
 
       open_curly_braces,
-      closed_curly_braces;
+      closed_curly_braces,
+
+      open_brackets,
+      closed_brackets;
+  int i;
 
   /* Obtener entrada. */
   getinput(text, MAXINP);
@@ -125,15 +131,20 @@ int main()
     return 1;
   }
 
-  fprintf(stdout, "%s\n", correct_syntax);
-
-  int n, i;
-
-  n = split(text, "\n", lines);
-  for (i = 0; i < n; ++i)
+  noflines = split(text, "\n", lines);
+  for (i = 0; i < noflines; ++i)
   {
-    printf("%s\n", lines[i]);
+    open_brackets = count(lines[i], "[", 0);
+    closed_brackets = count(lines[i], "]", 0);
+
+    if (open_brackets != closed_brackets)
+    {
+      fprintf(stderr, "%s\n", brackets_error);
+      return 1;
+    }
   }
+
+  fprintf(stdout, "%s\n", correct_syntax);
 
   return 0;
 }
