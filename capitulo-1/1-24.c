@@ -58,7 +58,7 @@ int find(char from[], char tar[], int offset);
 `from` en diferentes trozos, el fin de cada
 trozo lo marcan las aparicines de `tar`.
 Retorna la cantidad de lineas analizadas. */
-int split(char from[], char tar[], char to[MAX_LN_LGTH][MAX_LNS]);
+int split(char from[], char tar[], char to[MAX_LNS][MAX_LN_LGTH]);
 
 /* Compara dos arrays de caracteres
 para comprobar si son iguales. Si son
@@ -96,6 +96,7 @@ char curly_braces_error[] = "Syntax error: missing opening or closing curly brac
 int main()
 {
   char text[MAXINP];
+  char lines[MAX_LNS][MAX_LN_LGTH];
   int
       open_parenthesis,
       closed_parenthesis,
@@ -126,13 +127,10 @@ int main()
 
   fprintf(stdout, "%s\n", correct_syntax);
 
-  char lines[MAX_LN_LGTH][MAX_LNS];
-  int i, n;
+  int n, i;
 
   n = split(text, "\n", lines);
-
-  printf("%d\n", n);
-  for (i = 0; i < MAX_LNS; ++i)
+  for (i = 0; i < n; ++i)
   {
     printf("%s\n", lines[i]);
   }
@@ -220,14 +218,11 @@ int find(char from[], char tar[], int offset)
   return pos;
 }
 
-// FIXME: Se corrompe la memoria de pila, no se esta escribiendo correctamente.
-
-int split(char from[], char tar[], char to[MAX_LN_LGTH][MAX_LNS])
+int split(char from[], char tar[], char to[MAX_LNS][MAX_LN_LGTH])
 {
   int tarcount, tarpos, prevtarpos;
   int frlgth, tarlgth;
-  // int endswithtar;
-  char line;
+  int line;
   int i;
 
   prevtarpos = 0;
@@ -253,13 +248,11 @@ int split(char from[], char tar[], char to[MAX_LN_LGTH][MAX_LNS])
   }
 
   /* Rellena la ultima linea para `to` */
-  for (i = prevtarpos; i < frlgth - 2 && (i - prevtarpos) < MAX_LN_LGTH - 1; ++i)
+  for (i = prevtarpos; i < frlgth - 1 && (i - prevtarpos) < MAX_LN_LGTH - 1; ++i)
   {
     // printf("%d\t%d\t%c\n", i - prevtarpos, line, from[i]);
     to[line][i - prevtarpos] = from[i];
   }
-  // printf("%d\t%d\t%c\n", i - prevtarpos, line, from[i]);
-  to[line][i - prevtarpos] = '\0';
 
   return line + 1;
 }
