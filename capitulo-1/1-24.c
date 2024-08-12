@@ -26,14 +26,14 @@ cantidad de caracteres introducidos
 int getinput(char inp[], int inplgth);
 
 /* Retorna todas las apariciones de la
-constante de caracter `tar` dentro de
-la constante de caracteres `from`. */
+constante de cadena `tar` dentro de
+la constante de cadenaes `from`. */
 int count(char from[], char tar[], int offset);
 
 /* Permite obtener un slice de la
-constante de caracter `from` y guardarlo en
+constante de cadena `from` y guardarlo en
 el array de caracteres `to` (formado
-una nueva constante de caracter con
+una nueva constante de cadena con
 caracter nulo al final), el cual
 se debe indicar su maxima longitud
 en `maxto`. El slice comenzara en la
@@ -48,13 +48,13 @@ void slice(
 /* Permite obtener el indice de
 la primera aparicion de la constante
 de caracter `tar` dentro de la
-constante de caracter `from`.
+constante de cadena `from`.
 El parametro `offset` permite indicar
 que la busqueda se hara a partir de
 cierta posicion dentro de `from`. */
 int find(char from[], char tar[], int offset);
 
-/* Permite dividir la constante de caracter
+/* Permite dividir la constante de cadena
 `from` en diferentes trozos, el fin de cada
 trozo lo marcan las aparicines de `tar`.
 Retorna la cantidad de lineas analizadas. */
@@ -80,7 +80,9 @@ char correct_syntax[] = "Syntax is correct, nothing to be worried about.";
 char parenthesis_error[] = "Syntax error: missing opening or closing parenthesis.";
 char curly_braces_error[] = "Syntax error: missing opening or closing curly braces.";
 char brackets_error[] = "Syntax error: not aligned brackets.";
-char single_quots_error[] = "Syntax error: malformed single quots char.";
+char single_quots_error[] = "Syntax error: malformed char constant.";
+char double_quots_error[] = "Syntax error: malformed chain constant.";
+char escaped_char_error[] = "Syntax error: malformed escaped char sequence.";
 
 /*
 ## Checkeador de sintaxis basico para codigo fuente de C.
@@ -91,8 +93,8 @@ char single_quots_error[] = "Syntax error: malformed single quots char.";
 2.      Llaves                                  [S]
 3.      Corchetes alineados                     [S]
 4.      Single quots                            [S]
-5.      Double quots                            [N]
-6.      Secuencias de escape                    [N]
+5.      Double quots                            [S]
+6.      Secuencias de escape                    [S]
 7.      Comentarios                             [N]
 
 Cuando hablamos de corcheste alineados, hablamos de que deben estar en la misma linea.
@@ -107,7 +109,7 @@ int main()
   int textlgth;
 
   /* Almacena cada una de las
-  lineas de la constante de caracter
+  lineas de la constante de cadena
   `text`. */
   char lines[MAX_LNS][MAX_LN_LGTH];
   int noflines;
@@ -122,17 +124,38 @@ int main()
       closed_curly_braces,
 
       open_brackets,
-      closed_brackets;
+      closed_brackets,
+
+      double_quots;
+
+  int cstart, cend;
 
   /* Almacenan posiciones de
   caracteres de quots. */
   int quotpos, prevquotpos;
+
+  /* Almacena la posicion del
+  caracter de slash descendiente. */
+  int desslashpos;
 
   /* Otras variables. */
   int i;
 
   /* Obtener entrada. */
   getinput(text, MAXINP);
+
+  /* TODO: Eliminar comentarios. */
+  // cstart = find(text, "/*", 0);
+  // while (cstart > -1)
+  // {
+  //   cend = find(text, "*/", cstart);
+  //   if (cend == -1)
+  //     cend = len(text) - 1;
+
+  //   // TODO: Desplazar caracteres.
+
+  //   cstart = find(text, "/*", cend);
+  // }
 
   /* Comprobar parentesis. */
   open_parenthesis = count(text, "(", 0);
@@ -152,6 +175,8 @@ int main()
     return 1;
   }
 
+  /* Comprobar corchetes y constantes
+  de cadena alineados. */
   noflines = split(text, "\n", lines);
   for (i = 0; i < noflines; ++i)
   {
@@ -163,11 +188,18 @@ int main()
       fprintf(stderr, "%s\n", brackets_error);
       return 1;
     }
+
+    double_quots = count(lines[i], "\"", 0);
+    if (ismultiof(2, double_quots) == 0)
+    {
+      fprintf(stderr, "%s\n", double_quots_error);
+      return 1;
+    };
   }
 
-  /* Comprobar caracteres con single quots.
+  /* Comprobar constantes de caracter.
   Se asume que solamente puede haber un
-  unico caracter entre single quots. */
+  solo caracter en la constante de caracter. */
   prevquotpos = -1;
   quotpos = find(text, "\'", 0);
   while (quotpos > -1)
@@ -188,6 +220,27 @@ int main()
 
     prevquotpos = quotpos;
     quotpos = find(text, "\'", prevquotpos + 1);
+  }
+
+  /* Comprobar caracteres escapados.
+  Solamente pueden estar dentro de
+  constantes de caracteres o constantes
+  de cadena. */
+  desslashpos = find(text, "\\", 0);
+  while (desslashpos > -1)
+  {
+    double_quots = count(text, "\"", desslashpos);
+    if (ismultiof(2, double_quots) == 0)
+      ; // Dentro de una constante de cadena.
+    else if (text[desslashpos - 1] == '\'')
+      ; // Dentro de una constante de caracter.
+    else
+    {
+      fprintf(stderr, "%s\n", escaped_char_error);
+      return 1;
+    }
+
+    desslashpos = find(text, "\\", desslashpos + 1);
   }
 
   fprintf(stdout, "%s\n", correct_syntax);
