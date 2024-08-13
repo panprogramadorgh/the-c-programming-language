@@ -15,7 +15,7 @@ tener el programa de C a analizar. */
 /* Referencia la maxima cantidad
 de lineas de codigo fuente C que
 puede leer este programa. */
-#define MAX_LNS 1024
+#define MAX_LNS 64
 
 /* Permite obtener texto desde
 la entrada estadar y guardarlo
@@ -23,11 +23,14 @@ dentro del array del array de
 caracteres `inp`. Retorna la
 cantidad de caracteres introducidos
 (contando el ultimo caracter nulo) */
-int getinput(char inp[], int inplgth);
+int getinput(char inp[]);
 
 /* Retorna todas las apariciones de la
 constante de cadena `tar` dentro de
-la constante de cadenaes `from`. */
+la constante de cadenaes `from`.
+Si `from` sobre sale del limite de
+caracteres `MAXINP`, la funcion
+retorna 0. */
 int count(char from[], char tar[], int offset);
 
 /* Permite obtener un slice de la
@@ -51,7 +54,10 @@ de caracter `tar` dentro de la
 constante de cadena `from`.
 El parametro `offset` permite indicar
 que la busqueda se hara a partir de
-cierta posicion dentro de `from`. */
+cierta posicion dentro de `from`.
+La funcion retorna -1 en caso de no
+error o bien en caso de no encontrar
+el elemento deseado. */
 int find(char from[], char tar[], int offset);
 
 /* Permite dividir la constante de cadena
@@ -59,6 +65,12 @@ int find(char from[], char tar[], int offset);
 trozo lo marcan las aparicines de `tar`.
 Retorna la cantidad de lineas analizadas. */
 int split(char from[], char tar[], char to[MAX_LNS][MAX_LN_LGTH]);
+
+/* Permite eliminar quirurgicamente
+una secuencia de caracteres a partir
+de un indice determinado dentro de
+una constante de cadena.*/
+void surgrm(char chain[], int from, int to);
 
 /* Compara dos arrays de caracteres
 para comprobar si son iguales. Si son
@@ -77,12 +89,15 @@ int ismultiof(int m, int n);
 
 /* Varibles externas de mensajes. */
 char correct_syntax[] = "Syntax is correct, nothing to be worried about.";
+char max_line_length_error[] = "Syntax error: max line length exceded.";
+char max_lines_error[] = "Syntax error: max lines count exceded.";
 char parenthesis_error[] = "Syntax error: missing opening or closing parenthesis.";
 char curly_braces_error[] = "Syntax error: missing opening or closing curly braces.";
 char brackets_error[] = "Syntax error: not aligned brackets.";
 char single_quots_error[] = "Syntax error: malformed char constant.";
 char double_quots_error[] = "Syntax error: malformed chain constant.";
 char escaped_char_error[] = "Syntax error: malformed escaped char sequence.";
+char comment_error[] = "Syntax error: malformed comment sequence.";
 
 /*
 ## Checkeador de sintaxis basico para codigo fuente de C.
@@ -95,11 +110,13 @@ char escaped_char_error[] = "Syntax error: malformed escaped char sequence.";
 4.      Single quots                            [S]
 5.      Double quots                            [S]
 6.      Secuencias de escape                    [S]
-7.      Comentarios                             [N]
+7.      Comentarios                             [S]
 
 Cuando hablamos de corcheste alineados, hablamos de que deben estar en la misma linea.
 
 En el caso de los single quots, se aseume que solamente es valido colocar un solo caracter entre par de single quots, a no ser que el caracter se trate de un caracter escapado como \t.
+
+TODO: Manejar problematicas con inputs largos.
  */
 int main()
 {
@@ -126,7 +143,10 @@ int main()
       open_brackets,
       closed_brackets,
 
-      double_quots;
+      double_quots,
+
+      comment_start,
+      comment_end;
 
   int cstart, cend;
 
@@ -142,20 +162,33 @@ int main()
   int i;
 
   /* Obtener entrada. */
-  getinput(text, MAXINP);
+  getinput(text);
 
-  /* TODO: Eliminar comentarios. */
-  // cstart = find(text, "/*", 0);
-  // while (cstart > -1)
-  // {
-  //   cend = find(text, "*/", cstart);
-  //   if (cend == -1)
-  //     cend = len(text) - 1;
+  /* Comprobar comentarios. */
+  comment_start = count(text, "/*", 0);
+  comment_end = count(text, "*/", 0);
 
-  //   // TODO: Desplazar caracteres.
+  if (comment_start < comment_end)
+  {
+    fprintf(stderr, "%s\n", comment_error);
+    return 1;
+  }
 
-  //   cstart = find(text, "/*", cend);
-  // }
+  /* Eliminar comentarios de la
+  evaluacion. */
+  cstart = find(text, "/*", 0);
+  while (cstart > -1)
+  {
+    cend = find(text, "*/", cstart);
+    if (cend == -1)
+      cend = len(text) - 1 - 2;
+
+    surgrm(text, cstart, cend + 2);
+
+    cstart = find(text, "/*", cend);
+  }
+
+  printf("%s\n", text);
 
   /* Comprobar parentesis. */
   open_parenthesis = count(text, "(", 0);
@@ -248,11 +281,11 @@ int main()
   return 0;
 }
 
-int getinput(char inp[], int inplgth)
+int getinput(char inp[])
 {
   int i, c;
 
-  for (i = 0; (c = getchar()) != EOF && i < inplgth - 1; ++i)
+  for (i = 0; (c = getchar()) != EOF && i < MAXINP - 1; ++i)
     inp[i] = c;
   inp[i] = '\0';
 
@@ -346,25 +379,63 @@ int split(char from[], char tar[], char to[MAX_LNS][MAX_LN_LGTH])
   while ((tarpos = find(from, tar, prevtarpos)) > -1 && line < MAX_LNS)
   {
     for (i = prevtarpos; i < tarpos && (i - prevtarpos) < MAX_LN_LGTH - 1; ++i)
-    {
-      // printf("%d\t%d\t%c\n", i - prevtarpos, line, from[i]);
       to[line][i - prevtarpos] = from[i];
+    // Supero la maxima longitud de liena.
+    if (i == MAX_LN_LGTH)
+    {
+      fprintf(stderr, "%s\n", max_line_length_error);
+      return 1;
     }
-    // printf("%d\t%d\t%c\n", i - prevtarpos, line, from[i]);
     to[line][i - prevtarpos] = '\0';
 
     prevtarpos = tarpos + tarlgth - 1;
     ++line;
   }
 
+  if (line == MAX_LNS)
+  {
+    fprintf(stderr, "%s\n", max_lines_error);
+    return 1;
+  }
+
   /* Rellena la ultima linea para `to` */
   for (i = prevtarpos; i < frlgth - 1 && (i - prevtarpos) < MAX_LN_LGTH - 1; ++i)
-  {
-    // printf("%d\t%d\t%c\n", i - prevtarpos, line, from[i]);
     to[line][i - prevtarpos] = from[i];
+  if (i == MAX_LN_LGTH)
+  {
+    fprintf(stderr, "%s\n", max_line_length_error);
+    return 1;
   }
 
   return line + 1;
+}
+
+void surgrm(char chain[], int from, int to)
+{
+  int chainlgth;
+  int i, k;
+
+  chainlgth = len(chain);
+
+  char newchain[chainlgth];
+
+  if (from < 0 || to <= 0 || from >= chainlgth - 1 || to >= chainlgth || from + 2 > to)
+    return;
+
+  i = k = 0;
+  while (k < chainlgth)
+  {
+    if (i == from && k == i)
+      k = to;
+
+    newchain[i] = chain[k];
+
+    ++i;
+    ++k;
+  }
+
+  slice(newchain, chain, chainlgth - (to - from), 0);
+  chain[chainlgth - (to - from) + 1] = '\0';
 }
 
 int compare(char a[], char b[])
