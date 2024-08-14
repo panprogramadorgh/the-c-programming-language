@@ -2,12 +2,6 @@
 #include <stdlib.h>
 
 /* Referencia la maxima cantidad
-en bytes que se puede obtener desde
-la entrada estandar antes de que
-se corte el stream de lectura. */
-#define MAXINP 1024
-
-/* Referencia la maxima cantidad
 de caracteres por lina que ha de
 tener el programa de C a analizar. */
 #define MAX_LN_LGTH 256
@@ -16,6 +10,12 @@ tener el programa de C a analizar. */
 de lineas de codigo fuente C que
 puede leer este programa. */
 #define MAX_LNS 64
+
+/* Referencia la maxima cantidad
+en bytes que se puede obtener desde
+la entrada estandar antes de que
+se corte el stream de lectura. */
+#define MAXINP (MAX_LNS * MAX_LN_LGTH)
 
 /* Permite obtener texto desde
 la entrada estadar y guardarlo
@@ -63,7 +63,8 @@ int find(char from[], char tar[], int offset);
 /* Permite dividir la constante de cadena
 `from` en diferentes trozos, el fin de cada
 trozo lo marcan las aparicines de `tar`.
-Retorna la cantidad de lineas analizadas. */
+Retorna la cantidad de lineas analizadas o
+-1 en caso de error de longitud. */
 int split(char from[], char tar[], char to[MAX_LNS][MAX_LN_LGTH]);
 
 /* Permite eliminar quirurgicamente
@@ -89,14 +90,20 @@ int ismultiof(int m, int n);
 
 /* Varibles externas de mensajes. */
 char correct_syntax[] = "Syntax is correct, nothing to be worried about.";
-char max_line_length_error[] = "Syntax error: max line length exceded.";
-char max_lines_error[] = "Syntax error: max lines count exceded.";
+
+char max_length_error[] = "Syntax error: max length exceded.";
+
 char parenthesis_error[] = "Syntax error: missing opening or closing parenthesis.";
+
 char curly_braces_error[] = "Syntax error: missing opening or closing curly braces.";
+
 char brackets_error[] = "Syntax error: not aligned brackets.";
 char single_quots_error[] = "Syntax error: malformed char constant.";
+
 char double_quots_error[] = "Syntax error: malformed chain constant.";
+
 char escaped_char_error[] = "Syntax error: malformed escaped char sequence.";
+
 char comment_error[] = "Syntax error: malformed comment sequence.";
 
 /*
@@ -115,8 +122,6 @@ char comment_error[] = "Syntax error: malformed comment sequence.";
 Cuando hablamos de corcheste alineados, hablamos de que deben estar en la misma linea.
 
 En el caso de los single quots, se aseume que solamente es valido colocar un solo caracter entre par de single quots, a no ser que el caracter se trate de un caracter escapado como \t.
-
-TODO: Manejar problematicas con inputs largos.
  */
 int main()
 {
@@ -130,6 +135,7 @@ int main()
   `text`. */
   char lines[MAX_LNS][MAX_LN_LGTH];
   int noflines;
+  int linelgth;
 
   /* Almacenan las ocurrencias
   de un caracter determinado. */
@@ -162,7 +168,32 @@ int main()
   int i;
 
   /* Obtener entrada. */
-  getinput(text);
+  textlgth = getinput(text);
+
+  /* Error de longitud por numero
+  de caracteres insertados. F*/
+  if (textlgth > MAXINP)
+  {
+    fprintf(stderr, "%s\n", max_length_error);
+    return 1;
+  }
+
+  /* Error de longitud por exceso
+  de lineas. */
+  noflines = count(text, "\n", 0);
+  if (noflines > MAX_LNS)
+  {
+    fprintf(stderr, "%s\n", max_length_error);
+    return 1;
+  }
+
+  /* Error de longitud por exceso
+  de caracteres en una linea. */
+  if (split(text, "\n", lines) == -1)
+  {
+    fprintf(stderr, "%s\n", max_length_error);
+    return 1;
+  }
 
   /* Comprobar comentarios. */
   comment_start = count(text, "/*", 0);
@@ -188,7 +219,7 @@ int main()
     cstart = find(text, "/*", cend);
   }
 
-  printf("%s\n", text);
+  // printf("%s\n", text);
 
   /* Comprobar parentesis. */
   open_parenthesis = count(text, "(", 0);
@@ -210,7 +241,6 @@ int main()
 
   /* Comprobar corchetes y constantes
   de cadena alineados. */
-  noflines = split(text, "\n", lines);
   for (i = 0; i < noflines; ++i)
   {
     open_brackets = count(lines[i], "[", 0);
@@ -378,13 +408,14 @@ int split(char from[], char tar[], char to[MAX_LNS][MAX_LN_LGTH])
   line = 0;
   while ((tarpos = find(from, tar, prevtarpos)) > -1 && line < MAX_LNS)
   {
-    for (i = prevtarpos; i < tarpos && (i - prevtarpos) < MAX_LN_LGTH - 1; ++i)
-      to[line][i - prevtarpos] = from[i];
-    // Supero la maxima longitud de liena.
-    if (i == MAX_LN_LGTH)
+    for (i = prevtarpos; i < tarpos; ++i)
     {
-      fprintf(stderr, "%s\n", max_line_length_error);
-      return 1;
+      /* Si se llega a la ultima posicion
+      que admite la maxima longitud, hay
+      un error. */
+      if ((i - prevtarpos) == MAX_LN_LGTH - 1)
+        return -1;
+      to[line][i - prevtarpos] = from[i];
     }
     to[line][i - prevtarpos] = '\0';
 
@@ -392,19 +423,12 @@ int split(char from[], char tar[], char to[MAX_LNS][MAX_LN_LGTH])
     ++line;
   }
 
-  if (line == MAX_LNS)
-  {
-    fprintf(stderr, "%s\n", max_lines_error);
-    return 1;
-  }
-
   /* Rellena la ultima linea para `to` */
-  for (i = prevtarpos; i < frlgth - 1 && (i - prevtarpos) < MAX_LN_LGTH - 1; ++i)
-    to[line][i - prevtarpos] = from[i];
-  if (i == MAX_LN_LGTH)
+  for (i = prevtarpos; i < frlgth - 1; ++i)
   {
-    fprintf(stderr, "%s\n", max_line_length_error);
-    return 1;
+    if ((i - prevtarpos) == MAX_LN_LGTH - 1)
+      return -1;
+    to[line][i - prevtarpos] = from[i];
   }
 
   return line + 1;
