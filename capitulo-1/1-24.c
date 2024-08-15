@@ -17,6 +17,14 @@ la entrada estandar antes de que
 se corte el stream de lectura. */
 #define MAXINP (MAX_LNS * MAX_LN_LGTH)
 
+/* Define la secuencia apertura de
+comentario del lenguaje de programacion C. */
+#define CSTART "/*"
+
+/* Define la secuencia cierre de
+comentario del lenguaje de programacion C. */
+#define CEND "*/"
+
 /* Permite obtener texto desde
 la entrada estadar y guardarlo
 dentro del array del array de
@@ -59,6 +67,15 @@ La funcion retorna -1 en caso de no
 error o bien en caso de no encontrar
 el elemento deseado. */
 int find(char from[], char tar[], int offset);
+
+/* Se encarga especificamente de buscar
+sequencias de comentario fuera de constantes
+de caracter/cadena. La funcion retorna la
+posicion de la primera secuencia encontrada dentro
+de `from` o -1 en caso de error. Al igual que
+en la funcion `find`, en parametro offset permite
+buscar a partir de cierta posicion dentro de `from`. */
+int findcomm(char from[], char seq[], int offset);
 
 /* Permite dividir la constante de cadena
 `from` en diferentes trozos, el fin de cada
@@ -122,6 +139,8 @@ char comment_error[] = "Syntax error: malformed comment sequence.";
 Cuando hablamos de corcheste alineados, hablamos de que deben estar en la misma linea.
 
 En el caso de los single quots, se aseume que solamente es valido colocar un solo caracter entre par de single quots, a no ser que el caracter se trate de un caracter escapado como \t.
+
+TODO: Manejar sequencia de comentarios dentro de constante de caracter.
  */
 int main()
 {
@@ -194,6 +213,15 @@ int main()
     fprintf(stderr, "%s\n", max_length_error);
     return 1;
   }
+
+  int foo = findcomm(text, CSTART, 0);
+
+  printf("%d\n", foo);
+  if (foo != -1)
+    printf("%c\n", text[foo]);
+
+  // TODO: comprobar funcion `findcomm`
+  return 0;
 
   /* Comprobar comentarios. */
   comment_start = count(text, "/*", 0);
@@ -371,8 +399,8 @@ int find(char from[], char tar[], int offset)
   int tarlgth = len(tar);
 
   /* Proteccion contra desbordamiento
-  de memoria de pila. */
-  if (tarlgth > MAXINP)
+  de memoria de pila y offset negativo. */
+  if (tarlgth > MAXINP || offset < 0)
     return -1;
 
   char compare_try[tarlgth];
@@ -386,6 +414,40 @@ int find(char from[], char tar[], int offset)
     eq = compare(tar, compare_try);
     if (eq == 1)
       pos = i;
+  }
+
+  return pos;
+}
+
+int findcomm(char from[], char seq[], int offset)
+{
+  int pos;
+  int dquots, squots;
+  int seqlgth;
+  
+  if (offset < 0)
+    return -1;
+
+  dquots = squots = 1; // Inicialmente no son multiplo de 2
+  seqlgth = len(seq);
+  pos = find(from, seq, offset);
+  
+  while (pos > -1)
+  {
+    /* Proteccion contra desbordamiento
+    de memoria de pila. */
+    if (pos + 1 > MAXINP)
+      return -1;
+
+    char someslice[pos + 1];
+    slice(from, someslice, pos + 1, 0);
+    dquots = count(someslice, "\"", 0);
+    squots = count(someslice, "\'", 0);
+
+    if (ismultiof(2, dquots) == 1)
+      break;
+
+    pos = find(from, seq, pos + (seqlgth - 2));
   }
 
   return pos;
