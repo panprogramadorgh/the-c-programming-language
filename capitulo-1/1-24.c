@@ -41,6 +41,11 @@ caracteres `MAXINP`, la funcion
 retorna 0. */
 int count(char from[], char tar[], int offset);
 
+/* Funcion especificamente especializada
+en contar  secuencias de caracteres fuera
+de constantes de cadena y de caracter. */
+int special_count(char from[], char tar[], int offset);
+
 /* Permite obtener un slice de la
 constante de cadena `from` y guardarlo en
 el array de caracteres `to` (formado
@@ -69,13 +74,13 @@ el elemento deseado. */
 int find(char from[], char tar[], int offset);
 
 /* Se encarga especificamente de buscar
-sequencias de comentario fuera de constantes
-de caracter/cadena. La funcion retorna la
+sequencias de caracteres fuera de constantes
+de caracter y de cadena. La funcion retorna la
 posicion de la primera secuencia encontrada dentro
 de `from` o -1 en caso de error. Al igual que
 en la funcion `find`, en parametro offset permite
 buscar a partir de cierta posicion dentro de `from`. */
-int findcomm(char from[], char seq[], int offset);
+int special_find(char from[], char tar[], int offset);
 
 /* Permite dividir la constante de cadena
 `from` en diferentes trozos, el fin de cada
@@ -139,8 +144,6 @@ char comment_error[] = "Syntax error: malformed comment sequence.";
 Cuando hablamos de corcheste alineados, hablamos de que deben estar en la misma linea.
 
 En el caso de los single quots, se aseume que solamente es valido colocar un solo caracter entre par de single quots, a no ser que el caracter se trate de un caracter escapado como \t.
-
-TODO: Manejar sequencia de comentarios dentro de constante de caracter.
  */
 int main()
 {
@@ -214,18 +217,16 @@ int main()
     return 1;
   }
 
-  int foo = findcomm(text, CSTART, 0);
-
+  /* TODO: Depurar todo lo relacionado
+  con `special_find`.*/
+  int foo = special_find(text, "(", 0);
   printf("%d\n", foo);
-  if (foo != -1)
-    printf("%c\n", text[foo]);
 
-  // TODO: comprobar funcion `findcomm`
   return 0;
 
   /* Comprobar comentarios. */
-  comment_start = count(text, "/*", 0);
-  comment_end = count(text, "*/", 0);
+  comment_start = special_count(text, CSTART, 0);
+  comment_end = special_count(text, CEND, 0);
 
   if (comment_start < comment_end)
   {
@@ -235,23 +236,23 @@ int main()
 
   /* Eliminar comentarios de la
   evaluacion. */
-  cstart = find(text, "/*", 0);
+  cstart = special_find(text, CSTART, 0);
   while (cstart > -1)
   {
-    cend = find(text, "*/", cstart);
+    cend = special_find(text, CEND, cstart);
     if (cend == -1)
       cend = len(text) - 1 - 2;
 
     surgrm(text, cstart, cend + 2);
 
-    cstart = find(text, "/*", cend);
+    cstart = special_find(text, CSTART, cend);
   }
 
-  // printf("%s\n", text);
-
-  /* Comprobar parentesis. */
-  open_parenthesis = count(text, "(", 0);
-  closed_parenthesis = count(text, ")", 0);
+  /* Comprobar parentesis. Se cuentan
+  solamente los parentesis fuera de
+  constantes de cadena y de caracter. */
+  open_parenthesis = special_count(text, "(", 0);
+  closed_parenthesis = special_count(text, ")", 0);
   if (open_parenthesis != closed_parenthesis)
   {
     fprintf(stderr, "%s\n", parenthesis_error);
@@ -259,8 +260,8 @@ int main()
   }
 
   /* Comprobar llaves. */
-  open_curly_braces = count(text, "{", 0);
-  closed_curly_braces = count(text, "}", 0);
+  open_curly_braces = special_count(text, "{", 0);
+  closed_curly_braces = special_count(text, "}", 0);
   if (open_curly_braces != closed_curly_braces)
   {
     fprintf(stderr, "%s\n", curly_braces_error);
@@ -271,8 +272,8 @@ int main()
   de cadena alineados. */
   for (i = 0; i < noflines; ++i)
   {
-    open_brackets = count(lines[i], "[", 0);
-    closed_brackets = count(lines[i], "]", 0);
+    open_brackets = special_count(lines[i], "[", 0);
+    closed_brackets = special_count(lines[i], "]", 0);
 
     if (open_brackets != closed_brackets)
     {
@@ -280,7 +281,7 @@ int main()
       return 1;
     }
 
-    double_quots = count(lines[i], "\"", 0);
+    double_quots = special_count(lines[i], "\"", 0);
     if (ismultiof(2, double_quots) == 0)
     {
       fprintf(stderr, "%s\n", double_quots_error);
@@ -292,7 +293,7 @@ int main()
   Se asume que solamente puede haber un
   solo caracter en la constante de caracter. */
   prevquotpos = -1;
-  quotpos = find(text, "\'", 0);
+  quotpos = special_find(text, "\'", 0);
   while (quotpos > -1)
   {
     if (prevquotpos > -1)
@@ -310,7 +311,7 @@ int main()
     }
 
     prevquotpos = quotpos;
-    quotpos = find(text, "\'", prevquotpos + 1);
+    quotpos = special_find(text, "\'", prevquotpos + 1);
   }
 
   /* Comprobar caracteres escapados.
@@ -361,19 +362,37 @@ int count(char from[], char tar[], int offset)
     return 0;
 
   char compare_try[tarlgth];
-  int i, eq, count;
+  int i, eq, counter;
 
-  count = 0;
+  counter = 0;
 
   for (i = offset; i + tarlgth < frlgth + 1; ++i)
   {
     slice(from, compare_try, tarlgth, i);
     eq = compare(tar, compare_try);
     if (eq == 1)
-      ++count;
+      ++counter;
   }
 
-  return count;
+  return counter;
+}
+
+int special_count(char from[], char tar[], int offset)
+{
+  int counter;
+  int pos, tarlgth;
+
+  counter = 0;
+  pos = special_find(from, tar, 0);
+  tarlgth = len(tar);
+
+  while (pos > -1)
+  {
+    ++counter;
+    pos = special_find(from, tar, pos + (tarlgth - 1));
+  }
+
+  return counter;
 }
 
 void slice(
@@ -419,35 +438,37 @@ int find(char from[], char tar[], int offset)
   return pos;
 }
 
-int findcomm(char from[], char seq[], int offset)
+int special_find(char from[], char tar[], int offset)
 {
   int pos;
   int dquots, squots;
-  int seqlgth;
-  
+  int tarlgth;
+
+  dquots = squots = 1; // Inicialmente no son multiplo de 2.
   if (offset < 0)
     return -1;
 
-  dquots = squots = 1; // Inicialmente no son multiplo de 2
-  seqlgth = len(seq);
-  pos = find(from, seq, offset);
-  
+  tarlgth = len(tar);
+  pos = find(from, tar, offset);
+
   while (pos > -1)
   {
     /* Proteccion contra desbordamiento
     de memoria de pila. */
-    if (pos + 1 > MAXINP)
+    if (pos > MAXINP)
       return -1;
+    else if (pos > 0)
+    {
+      char someslice[pos];
+      slice(from, someslice, pos, 0);
+      dquots = count(someslice, "\"", 0);
+      squots = count(someslice, "\'", 0);
+    }
 
-    char someslice[pos + 1];
-    slice(from, someslice, pos + 1, 0);
-    dquots = count(someslice, "\"", 0);
-    squots = count(someslice, "\'", 0);
-
-    if (ismultiof(2, dquots) == 1)
+    if (ismultiof(2, dquots) && ismultiof(2, squots))
       break;
 
-    pos = find(from, seq, pos + (seqlgth - 2));
+    pos = find(from, tar, pos + (tarlgth - 1));
   }
 
   return pos;
