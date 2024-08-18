@@ -1,16 +1,25 @@
 #include <stdio.h>
 
-#define CHAR_BITS 8
+// #define CHAR_BITS 8
 
-#define SHORT_BITS 16
+// #define SHORT_BITS 16
 
-#define INT_BITS 32
+// #define INT_BITS 32
 
-#define LONG_BITS 64
+// #define LONG_BITS 64
+
+enum sizes
+{
+  CHAR_BITS = 8,
+  SHORT_BITS = 16,
+  INT_BITS = 32,
+  LONG_BITS = 64
+};
 
 /* Funcion de exponenciacion
 de numeros naturales. */
-unsigned long long int powto(unsigned long long int m, unsigned short int n);
+unsigned long long int
+powto(unsigned long long int m, unsigned short int n);
 
 /* Imprime el rango de valores sin signo. */
 void print_unsigned_range(int unsigned long long to);
