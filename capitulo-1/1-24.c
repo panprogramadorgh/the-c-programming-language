@@ -144,6 +144,11 @@ char comment_error[] = "Syntax error: malformed comment sequence.";
 Cuando hablamos de corcheste alineados, hablamos de que deben estar en la misma linea.
 
 En el caso de los single quots, se aseume que solamente es valido colocar un solo caracter entre par de single quots, a no ser que el caracter se trate de un caracter escapado como \t.
+
+FIXME: Arreglar comprobacion de constantes de cadena con nuevas funciones `special_find` y `speical_count`.
+
+TODO: Manejar constantes de caracter y constantes de cadena que incluyen los caracteres escapados \" y \'.
+
  */
 int main()
 {
@@ -193,7 +198,7 @@ int main()
   textlgth = getinput(text);
 
   /* Error de longitud por numero
-  de caracteres insertados. F*/
+  de caracteres insertados. */
   if (textlgth > MAXINP)
   {
     fprintf(stderr, "%s\n", max_length_error);
@@ -216,13 +221,6 @@ int main()
     fprintf(stderr, "%s\n", max_length_error);
     return 1;
   }
-
-  /* TODO: Depurar todo lo relacionado
-  con `special_find`.*/
-  int foo = special_find(text, "(", 0);
-  printf("%d\n", foo);
-
-  return 0;
 
   /* Comprobar comentarios. */
   comment_start = special_count(text, CSTART, 0);
@@ -353,25 +351,15 @@ int getinput(char inp[])
 
 int count(char from[], char tar[], int offset)
 {
-  int frlgth = len(from);
-  int tarlgth = len(tar);
+  int tarlgth, counter, pos;
 
-  /* Proteccion contra desbordamiento
-  de pila en array `compare_try`. */
-  if (tarlgth > MAXINP)
-    return 0;
+  tarlgth = len(tar);
+  pos = find(from, tar, offset);
 
-  char compare_try[tarlgth];
-  int i, eq, counter;
-
-  counter = 0;
-
-  for (i = offset; i + tarlgth < frlgth + 1; ++i)
+  for (counter = 0; pos > -1;)
   {
-    slice(from, compare_try, tarlgth, i);
-    eq = compare(tar, compare_try);
-    if (eq == 1)
-      ++counter;
+    ++counter;
+    pos = find(from, tar, pos + (tarlgth - 1));
   }
 
   return counter;
@@ -379,14 +367,13 @@ int count(char from[], char tar[], int offset)
 
 int special_count(char from[], char tar[], int offset)
 {
-  int counter;
   int pos, tarlgth;
+  int counter;
 
-  counter = 0;
-  pos = special_find(from, tar, 0);
   tarlgth = len(tar);
+  pos = special_find(from, tar, offset);
 
-  while (pos > -1)
+  for (counter = 0; pos > -1;)
   {
     ++counter;
     pos = special_find(from, tar, pos + (tarlgth - 1));
@@ -427,7 +414,7 @@ int find(char from[], char tar[], int offset)
 
   pos = -1;
 
-  for (i = offset; i + tarlgth < frlgth && pos == -1; ++i)
+  for (i = offset; i + tarlgth <= frlgth && pos == -1; ++i)
   {
     slice(from, compare_try, tarlgth, i);
     eq = compare(tar, compare_try);
@@ -444,26 +431,35 @@ int special_find(char from[], char tar[], int offset)
   int dquots, squots;
   int tarlgth;
 
-  dquots = squots = 1; // Inicialmente no son multiplo de 2.
   if (offset < 0)
     return -1;
 
-  tarlgth = len(tar);
   pos = find(from, tar, offset);
+
+  tarlgth = len(tar);
 
   while (pos > -1)
   {
-    /* Proteccion contra desbordamiento
-    de memoria de pila. */
-    if (pos > MAXINP)
-      return -1;
-    else if (pos > 0)
+    /* Proteger contra desbordamiento
+    de memoria de pila y manejar cuando
+    no se encontro nada. */
+    if (pos + 1 >= MAXINP || pos == -1)
     {
-      char someslice[pos];
-      slice(from, someslice, pos, 0);
-      dquots = count(someslice, "\"", 0);
-      squots = count(someslice, "\'", 0);
+      pos = -1;
+      break;
     }
+    else if (pos == 0)
+    {
+      break;
+    }
+
+    char someslice[pos + 1];
+    slice(from, someslice, pos + 1, 0);
+
+    // printf("%s\n", someslice);
+
+    dquots = count(someslice, "\"", 0);
+    squots = count(someslice, "\'", 0);
 
     if (ismultiof(2, dquots) && ismultiof(2, squots))
       break;
