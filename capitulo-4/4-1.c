@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 /* Represents the maximum length for literal strings through the entire programm. */
 #define MAX 1024
@@ -54,9 +55,10 @@ void reverse(char s[])
 unsigned int strindex(char s[], char t[])
 {
   int i, j;
-  int pos;
+  int pos, slen, tlen;
 
   pos = -1;
+  slen = strlen(s), tlen = strlen(t);
   reverse(s), reverse(t);
   for (i = 0; (pos == -1) && (s[i] != '\0'); i++)
   {
@@ -67,5 +69,5 @@ unsigned int strindex(char s[], char t[])
   }
   reverse(s), reverse(t);
 
-  return pos;
+  return ((slen - 1) - pos) - (tlen - 1);
 }
