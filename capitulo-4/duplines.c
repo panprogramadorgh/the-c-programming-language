@@ -18,7 +18,8 @@ int main()
   /* caracter, linea actual, indice dentro de linea, salir. */
   int c, line, cindex, out = 0;
 
-  for (line = 0; !out && line < MAXLINES; line++)
+  line = 0;
+  while (!out && line < MAXLINES)
   {
     for (cindex = 0;
          !out &&
@@ -38,6 +39,9 @@ int main()
       printf("%s\n", lines[line]);
       return 0;
     }
+
+    if (cindex > 0)
+      line++;
   }
 
   if (out)
