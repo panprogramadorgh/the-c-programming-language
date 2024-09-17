@@ -5,6 +5,9 @@
 /* Determines the maximum length for the stack values. */
 #define MAXSTACK (1U << 6)
 
+/* Determines the maximum length in characters of the number to input. If the maximum is reached, the excess is divested. */
+#define MAXD (1U << 5)
+
 /* Defines the input for `getinput`. */
 enum inptypes
 {
@@ -34,10 +37,6 @@ double pop(void);
 /* Prints the current values for stack. */
 void prtstack();
 
-/* Next stack next. */
-int next = 0;
-/* Stack values. */
-double stack[MAXSTACK];
 /* Stores number input. */
 double n;
 /* Stores operation input.*/
@@ -50,12 +49,9 @@ int main()
   /* User data entrance. */
   int input;
 
-  while (1)
+  while ((input = getinput()) != EXIT)
   {
-    input = getinput();
-    if (input == EXIT)
-      break; // If the next pos in stack is the first (operation is deemed as complete) exit the loop.
-    else if (input == NUMBER)
+    if (input == NUMBER)
       push(n);
     else // input is an operator
     {
@@ -78,15 +74,15 @@ int main()
     }
   }
 
-  // printf("%f\n", stack[0]); // Prints first position of stack.
-
   prtstack();
 
   return 0;
 }
 
-/* Determines the maximum length in characters of the number to input. If the maximum is reached, the excess is divested. */
-#define MAX_DIGIT_LEN (1U << 5)
+/* Next stack next. */
+int next = 0;
+/* Stack values. */
+double stack[MAXSTACK];
 
 /* Generic Utilities. */
 
@@ -106,7 +102,7 @@ double atof(const char s[])
     ipart = ipart * 10 + (s[i] - '0');
   if (s[i] == '.')
     i++;
-  for (fpart = 0.0, divisor = 1; isdigit(s[i]); i++, divisor *= 10)
+  for (fpart = 0.0, divisor = 1.0; isdigit(s[i]); i++, divisor *= 10)
     fpart = fpart * 10 + (s[i] - '0');
   fpart /= divisor;
 
@@ -146,61 +142,54 @@ void prtstack()
   int i;
   for (i = 0; i < next; i++)
   {
-    printf("%f, ", stack[i]);
-    if (i % 10 == 0)
+    printf("%f", stack[i]);
+    if (i < next - 1)
+      printf(", \n");
+    else
       putchar('\n');
   }
-  putchar('\n');
 }
 
 int getinput()
 {
   /* Digit characters. */
-  char digit[MAX_DIGIT_LEN];
-  /* Is an operator. */
-  int isop;
-  /* Has entry a digit or an operator. */
-  int ent;
-
+  char digit[MAXD];
   int c, i;
 
-  i = isop = ent = 0;
-
-  /* Entering the integer part of the number or just an operator. */
-  while (
-      (!isop) &&
-      (i < MAX_DIGIT_LEN - 1) &&
-      (isdigit((c = getchar())) || (ent == 0 && (isspace(c) || isoperator(c)))))
+  /* Ignore initial spaces or tabs. */
+  while (isspace((c = getchar())))
+    ;
+  /* Checking if the first non-space character is an operator. */
+  if (isoperator(c))
   {
-    if (!isspace(c) && ent == 0)
-      ent = 1;
-    if (isoperator(c))
+    op = c;
+    return OPERATOR;
+  }
+
+  i = 0;
+  if (isdigit(c))
+  {
+    /* Entering the integer part. */
+    do
     {
-      op = c;
-      isop = 1;
-    }
-    else if (isdigit(c))
-    {
-      if (ent == 0)
-        ent = 1;
       digit[i++] = c;
+    } while ((i < MAXD - 1) && isdigit((c = getchar())));
+
+    /* The input prompt stoped coused for integer part ending. */
+    if ((i < MAXD - 1) && c == '.')
+    {
+      digit[i++] = c;
+
+      /* Entering the floating part. */
+      while ((i < MAXD - 1) && isdigit((c = getchar())))
+        digit[i++] = c;
     }
   }
+  digit[i] = '\0';
 
   if (c == EOF)
     return EXIT;
-  else if (isop)
-    return OPERATOR;
 
-  /* The input prompt stoped coused for integer part ending. */
-  if (c == '.')
-  {
-    digit[i++] = c;
-    for (; (i < MAX_DIGIT_LEN - 1) && (isdigit((c = getchar()))); i++)
-      digit[i] = c;
-  }
-
-  digit[i] = '\0';
   n = atof(digit);
 
   return NUMBER;
