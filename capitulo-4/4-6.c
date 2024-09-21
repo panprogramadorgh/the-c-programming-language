@@ -21,38 +21,44 @@
 /* Defines the input signals for `getinput`. */
 enum inptypes
 {
-  UNINIT_INPTYPE, // Input type signal for uninitialized value.
-  NUMBER,
-  OPERATOR,
-  VARIABLE,
-  COMMAND, // Input type signal for commands (ex: \q equivalent to EXIT signal)
-  EXIT     // Input type signal for program exit.
+  INPT_UNINIT, // Input type signal for uninitialized value.
+  INPT_NUMBER,
+  INPT_OPERATOR,
+  INPT_VARIABLE,
+  INPT_COMMAND, // Input type signal for commands (ex: \q equivalent to EXIT signal)
+  INPT_EXIT     // Input type signal for program exit.
 };
 
 /* Defines the available operators to be choosen in `getinput`. */
 enum operators
 {
-  UNINIT_OP, // Operator signal for uninitialized value.
-  ADD = '+',
-  SUB = '-',
-  MUL = '*',
-  DIV = '/',
-  MOD = '%'
+  OP_UNINIT, // Operator signal for uninitialized value.
+  OP_ADD = '+',
+  OP_SUB = '-',
+  OP_MUL = '*',
+  OP_DIV = '/',
+  OP_MOD = '%'
 };
 
 enum commands
 {
-  QUIT = 'q',     // Ends all calc stacks.
-  NEXT = 'n',     // Steps over the next calc stack.
-  STACK = 's',    // Prints the stack.
-  LASTSTACK = 'l' // Prins the last stack.
+  CMD_QUIT = 'q',      // Ends all calc stacks.
+  CMD_NEXT = 'n',      // Steps over the next calc stack.
+  CMD_STACK = 's',     // Prints the stack.
+  CMD_LASTSTACK = 'l', // Prins the last stack.
+  CMD_CLRSCR = 'c'     // Clears the screen
+};
+
+enum constants
+{
+  CONST_LASTSTACK = 'l'
 };
 
 /* Allows to get the user input for calculator. Different input types defined in `inptypes` enum. */
-int getinput();
+int getinput(void);
 
-/* Allows to copy literal strings. */
-void copystr(const char from[], char to[]);
+/* Clears and prints the initial text. */
+void resetscr(void);
 
 /* Stack utilities. */
 /* Pushes a new value to the stack. */
@@ -81,7 +87,7 @@ void prtstack();
 /* Stores number input. */
 double n = 0.0;
 /* Stores operation input (or number sign). */
-char op = UNINIT_INPTYPE;
+char op = INPT_UNINIT;
 /* Stores the last stack result value. */
 double lstack = 0.0;
 /* Stores the variables. */
@@ -94,11 +100,7 @@ int main()
   /* User data entrance. */
   int input, ex, next;
 
-  printf(BLUE "Reverse Polish notation based calculator (v1.0).\n" RESET);
-  printf(
-      "Enter a line break to move to the next argument.\n\
-Type \\n to calculate and step over the next calc\n\
-stack or \\q to calculate and finish.\n");
+  resetscr();
 
   ex = 0;
   while (!ex)
@@ -109,57 +111,60 @@ stack or \\q to calculate and finish.\n");
     {
       input = getinput();
 
-      if (input == NUMBER)
+      if (input == INPT_NUMBER)
         push(n);
-      else if (input == OPERATOR)
+      else if (input == INPT_OPERATOR)
       {
         n2 = pop(), n1 = pop();
 
         switch (op)
         {
-        case ADD:
+        case OP_ADD:
           push(n1 + n2);
           break;
-        case SUB:
+        case OP_SUB:
           push(n1 - n2);
           break;
-        case MUL:
+        case OP_MUL:
           push(n1 * n2);
           break;
-        case DIV:
+        case OP_DIV:
           push(n1 / n2);
           break;
-        case MOD:
+        case OP_MOD:
           push((int)n1 % (int)n2);
           break;
         default:
           break;
         }
       }
-      else if (input == VARIABLE)
+      else if (input == INPT_VARIABLE)
         ;
-      else if (input == COMMAND)
+      else if (input == INPT_COMMAND)
       {
         switch (getchar())
         {
-        case QUIT:
+        case CMD_QUIT:
           ex = 1;
           break;
-        case NEXT:
+        case CMD_NEXT:
           next = 1;
           break;
-        case STACK:
+        case CMD_STACK:
           prtstack();
           break;
-        case LASTSTACK:
+        case CMD_LASTSTACK:
           printf("%f\n", lstack);
+          break;
+        case CMD_CLRSCR:
+          resetscr();
           break;
         default:
           fprintf(stderr, RED "command error: Unkown command.\n" RESET);
           exit(1);
         }
       }
-      else if (input == EXIT)
+      else if (input == INPT_EXIT)
         ex = 1;
       else
       {
@@ -208,15 +213,7 @@ double atof(const char s[])
 /* Allows to simplify operator character checking. */
 int isoperator(char op)
 {
-  return (op == ADD || op == SUB || op == MUL || op == DIV || op == MOD);
-}
-
-/* Allows to copy literal strings. */
-void copystr(const char from[], char to[])
-{
-  int i, c;
-  for (i = 0; (to[i] = from[i]) != '\0'; i++)
-    ;
+  return (op == OP_ADD || op == OP_SUB || op == OP_MUL || op == OP_DIV || op == OP_MOD);
 }
 
 /* --- --- --- --- */
@@ -310,19 +307,27 @@ int getinput()
     ;
 
   if (c == '\\')
-    return COMMAND;
+    return INPT_COMMAND;
 
   if (c == '$')
   {
-    for (; i < MAXD - 1 && isdigit((c = getchar())); i++)
+    for (; i < MAXD - 1 && (isdigit((c = getchar()))); i++)
       varnlit[i] = c;
+    varnlit[i] = '\0';
+    /* A variable that represents the last the last stack result.  */
+    if (c == 'l')
+    {
+      n = lstack;
+      return INPT_NUMBER;
+    }
+    /* Checking variable name length. */
     if (i == 0 || i >= MAXD - 1)
     {
       fprintf(stderr, RED "getinput error: Invalid variable name.\n" RESET);
       exit(1); // Program exit.
     }
-    varnlit[i] = '\0';
 
+    /* Handling variable name. */
     varn = atof(varnlit);
     if (varn >= MAXVAR)
     {
@@ -330,6 +335,7 @@ int getinput()
       exit(1); // Program exit.
     }
 
+    /* In case the user is setting the variable. */
     if (c == ' ')
     {
       for (i = 0; isdigit((c = getchar())); i++)
@@ -342,10 +348,11 @@ int getinput()
       }
       varvlit[i] = '\0';
       variables[varn] = atof(varvlit);
-      return VARIABLE;
+      return INPT_VARIABLE;
     }
+    /* Or just returning the value of the variable. */
     n = variables[varn];
-    return NUMBER;
+    return INPT_NUMBER;
   }
 
   /* Checking if the first non-space character is an operator. */
@@ -356,8 +363,8 @@ int getinput()
       sign = (tempop == '+') ? 1 : -1;
     else
     {
-      op = tempop;     // Sets the operator
-      return OPERATOR; // Returns the signal
+      op = tempop;          // Sets the operator
+      return INPT_OPERATOR; // Returns the signal
     }
   }
 
@@ -383,7 +390,7 @@ int getinput()
   digit[i] = '\0';
 
   if (c == EOF)
-    return EXIT;
+    return INPT_EXIT;
   else if (!isdigit(c) && c != '\n')
   {
     fprintf(stderr, RED "getinput error: Invalid character input.\n" RESET);
@@ -391,5 +398,15 @@ int getinput()
   }
 
   n = atof(digit) * sign;
-  return NUMBER;
+  return INPT_NUMBER;
+}
+
+void resetscr(void)
+{
+  printf("\e[1;1H\e[2J"); // Clears the screen.
+  printf(BLUE "RPC - Reverse Polish notation based calculator (v1.0).\n" RESET);
+  printf(
+      "Enter a line break to move to the next argument.\n\
+Type \\n to calculate and step over the next calc\n\
+stack or \\q to calculate and finish.\n");
 }
