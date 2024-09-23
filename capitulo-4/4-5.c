@@ -352,7 +352,7 @@ int getinput()
     /* In case the user is setting the variable. */
     if (c == ' ')
     {
-      for (i = 0; i < MAXD - 1 && isdigit((c = getchar())); i++)
+      for (i = 0; i < MAXD - 1 && (isdigit((c = getchar())) || (i == 0 && (c == '+' || c == '-'))); i++)
         varlit[i] = c;
 
       /* In case the new value is other variable. */
@@ -361,7 +361,7 @@ int getinput()
         int rvarn;
 
         /* Checking variable name length. */
-        for (; i < MAXD - 1 && isdigit((c = getchar())); i++)
+        for (; i < MAXD - 1 && (isdigit((c = getchar()))); i++)
           varlit[i] = c;
         varlit[i] = '\0';
 
@@ -385,13 +385,8 @@ int getinput()
       }
       /* Or just a new value. */
 
-      // TODO: Terminar de implementar sistema de signos para valores nuevos de variables.
-
-      if (i == 0 && (c == '+' || c == '-'))
-        varvsign = (c == '+') ? 1 : -1;
-
       /* Checking variable value length. */
-      if (i == 0 || i >= MAXD)
+      if ((i == 0 || (i == 1 && (c == '+' || c == '-'))) || i >= MAXD)
       {
         fprintf(stderr, RED "getinput error: Invalid variable value.\n" RESET);
         exit(1); // Program exit.
