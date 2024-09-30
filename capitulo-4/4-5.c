@@ -2,6 +2,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 
+/* Determines the maximum length for literal strings (ex: `funcname` literal string which stores the function name introduced by the user). */
+#define MAXS (1U << 10)
+
 /* Determines the maximum length for the stack values. */
 #define MAXSTACK (1U << 6)
 
@@ -10,6 +13,9 @@
 
 /* Max length for the variables array. */
 #define MAXVAR (1U << 10)
+
+/* Determines the maximum length for function arguments. */
+#define MAXARGS (1U << 6)
 
 /* ANSI scape codes for colors. */
 #define RED "\x1b[31m"
@@ -43,11 +49,10 @@ enum operators
 
 enum commands
 {
-  CMD_QUIT = 'q',      // Ends all calc stacks.
-  CMD_NEXT = 'n',      // Steps over the next calc stack.
-  CMD_STACK = 's',     // Prints the stack.
-  CMD_LASTSTACK = 'l', // Prins the last stack.
-  CMD_CLRSCR = 'c'     // Clears the screen
+  CMD_QUIT = 'q',  // Ends all calc stacks.
+  CMD_NEXT = 'n',  // Steps over the next calc stack.
+  CMD_STACK = 's', // Prints the stack.
+  CMD_CLRSCR = 'c' // Clears the screen
 };
 
 enum constants
@@ -55,11 +60,24 @@ enum constants
   CONST_LASTSTACK = 'l'
 };
 
+/* Utilities. */
+
+/* Allows to get a character from the stdin. */
+int getch(void);
+
+/* Allows to unget characters. */
+void ungetch(int c);
+
 /* Allows to get the user input for calculator. Different input types defined in `inptypes` enum. */
 int getinput(void);
 
 /* Clears and prints the initial text. */
 void resetscr(void);
+
+/* Allows to compare two different literal strings. */
+int comparestr(const char a[], const char b[]);
+
+/* --------------- */
 
 /* Stack utilities. */
 /* Pushes a new value to the stack. */
@@ -80,32 +98,34 @@ void swap(void);
 /* Cleans the stack. */
 void clean(void);
 
-/* --------------- */
-
 /* Prints the current values for stack. */
 void prtstack();
+/* --------------- */
 
 /* Stores number input. */
 double n = 0.0;
+
 /* Stores operation input (or number sign). */
 char op = INPT_UNINIT;
+
 /* Stores the last stack result value. */
 double lstack = 0.0;
+
 /* Stores the variables. */
 double variables[MAXVAR];
+
+/* Stores the function names. */
+char funcname[MAXS];
+/* Stores the funcion arguments. */
+char funcargs[MAXARGS][MAXS];
+int funcargscount;
 
 /*
   ### Mejoras a realizar:
 
   TODO:
 
-  1. Sistema de llamada a funciones (ejemplo funciones trigonometricas) (ejemplo: f:<func name> arg1 arg2 ...)
-
-  1.1 Funcion para imprimir valores o variables (quita por lo tanto comando para imprimir ultimo resultado de pila, por ejecutar funcion de imprimir variables con la constante que almacena el resultado de la ultima pila de calculo)
-
-  2. Settear variables con el valor de otra variable.
-
-  3. Implementar funcion de C para obtener mas facilmente el valor de las variables (en general implementar alguna funcion para simplificar la logica).
+  1. Reorganizar funcion getinput
 */
 int main()
 {
@@ -156,7 +176,7 @@ int main()
         ;
       else if (input == INPT_COMMAND)
       {
-        switch (getchar())
+        switch (getch())
         {
         case CMD_QUIT:
           ex = 1;
@@ -167,14 +187,67 @@ int main()
         case CMD_STACK:
           prtstack();
           break;
-        case CMD_LASTSTACK:
-          printf("%f\n", lstack);
-          break;
         case CMD_CLRSCR:
           resetscr();
           break;
         default:
-          fprintf(stderr, RED "command error: Unkown command.\n" RESET);
+          fprintf(stderr, RED "main error: command error: Unkown command.\n" RESET);
+          exit(1);
+        }
+      }
+      else if (input == INPT_FUNCTION)
+      {
+        if (comparestr(funcname, "prt")) // Funcion para imprimir variables
+        {
+          double arg;
+
+          if (funcargscount < 1)
+          {
+            fprintf(stderr, RED "main error: prt error: At least one argument is required.\n" RESET);
+            exit(1);
+          }
+          arg = atof(funcargs[0]);
+          printf("%f\n", arg);
+        }
+        else if (comparestr(funcname, "head"))
+        {
+          if (funcargscount > 0)
+          {
+            fprintf(stderr, RED "main error: head error: No arguments are required.\n" RESET);
+            exit(1);
+          }
+          printf("%f\n", head());
+        }
+        else if (comparestr(funcname, "duplast"))
+        {
+          if (funcargscount > 0)
+          {
+            fprintf(stderr, RED "main error: duplast error: No arguments are required.\n" RESET);
+            exit(1);
+          }
+          duplast();
+        }
+        else if (comparestr(funcname, "swap"))
+        {
+          if (funcargscount > 0)
+          {
+            fprintf(stderr, RED "main error: swap error: No arguments are required.\n" RESET);
+            exit(1);
+          }
+          swap();
+        }
+        else if (comparestr(funcname, "clean"))
+        {
+          if (funcargscount > 0)
+          {
+            fprintf(stderr, RED "main error: clean error: No arguments are required.\n" RESET);
+            exit(1);
+          }
+          clean();
+        }
+        else
+        {
+          fprintf(stderr, RED "main error: Unknown funcion name.\n" RESET);
           exit(1);
         }
       }
@@ -228,6 +301,111 @@ double atof(const char s[])
 int isoperator(char op)
 {
   return (op == OP_ADD || op == OP_SUB || op == OP_MUL || op == OP_DIV || op == OP_MOD);
+}
+
+/* Allows to compare two different literal strings. */
+int comparestr(const char a[], const char b[])
+{
+  int alen, blen;
+  int i;
+
+  for (alen = 0; a[alen] != '\0'; alen++)
+    ;
+  for (blen = 0; (blen <= alen + 1) && (b[blen] != '\0'); blen++)
+    ;
+  if (blen != alen)
+    return 0;
+
+  for (i = 0; i < alen && a[i] == b[i]; i++)
+    ;
+  return i >= alen;
+}
+
+/* Modularization utilities. */
+
+/* In charge of getting and settings the function name. The function returns the next character to the name. */
+char getfuncname()
+{
+  int i, c;
+
+  for (i = 0; (i < MAXS - 1) && !isspace((c = getch())); i++)
+    funcname[i] = c;
+  funcname[i] = '\0';
+
+  return c;
+}
+
+/* In charge of getting and setting the function parameters. */
+void getfuncargs()
+{
+  int i, j, c;
+
+  while ((c = getch()) == ' ')
+    ;
+
+  j = 0;
+  do
+  {
+    for (i = 0; (i < MAXS - 1) && !isspace(c); i++, (c = getch()))
+    {
+      funcargs[j][i] = c;
+    }
+    funcargs[j][i] = '\0';
+    j++;
+  } while (j < MAXARGS && c == ' ');
+  funcargscount = j;
+}
+
+/* Allows to get variable names from stdin. */
+int getvarn()
+{
+  char varnamelit[MAXD];
+  int varname, c, i;
+
+  for (i = 0; (i < MAXD - 1) && isdigit((c = getch())); i++)
+    varnamelit[i] = c;
+  varnamelit[i] = '\0';
+
+  /* Handling constants. */
+  if (i == 0 && c == 'l')
+    return c;
+  /* ------------------ */
+
+  if (i == MAXD - 1 || i == 0)
+  {
+    fprintf(stderr, RED "getinput error: Invalid variable name.\n" RESET);
+    exit(1); // Program exit.
+  }
+
+  varname = atof(varnamelit);
+  return varname;
+}
+
+/* In charge of reading digits. TODO: Comprobar que funcione. TODO: Crear funcion para numeros enteros. */
+double getdigit()
+{
+  char digitlit[MAXD];
+  int c, i;
+  double result;
+
+  i = 0;
+
+  while ((c = getch()) == ' ')
+    ;
+  if (c == '+' || c == '-')
+    digitlit[i++] = c;
+  for (; (i < MAXD - 1) && isdigit((c = getch())); i++)
+    digitlit[i] = c;
+  if (c == '.')
+  {
+    digitlit[i++] = '.';
+    for (; (i < MAXD - 1) && isdigit((c = getch())); i++)
+      digitlit[i] = c;
+  }
+  digitlit[i] = '\0';
+
+  result = atof(digitlit);
+  return result;
 }
 
 /* --- --- --- --- */
@@ -299,158 +477,123 @@ void prtstack()
   }
 }
 
+/* Input utilities */
+
+int lastchar = '\0';
+
+int getch()
+{
+  int c;
+
+  if (lastchar == '\0')
+    return getch();
+  c = lastchar;
+  lastchar = '\0';
+
+  return c;
+}
+
+void ungetch(int c)
+{
+  lastchar = c;
+}
+
 int getinput()
 {
   /* Variables. */
-  char varlit[MAXD];
-  int varn, varvsign;
-  double varv;
-  /* --------- */
+  int varn1, varn2;
+  double varv; // It can be a floating point digit, or failing that, the value of other variable.
 
-  /* Digit characters. */
-  char digit[MAXD];
+  int c;
 
-  int sign, c, i;
+  /* Loop variables. */
+  int i, j;
 
-  /* The number is positive by default (if corresponding). */
-  sign = varvsign = 1;
   i = 0;
 
   /* Ignore initial spaces or tabs. */
-  while (isspace((c = getchar())))
+  while (isspace((c = getch())))
     ;
 
+  if (isdigit(c) || c == '+' || c == '-')
+  {
+    if (isdigit(c))
+      ungetch(c);
+    n = getdigit();
+    return INPT_NUMBER;
+  }
+
+  /* Handling command. */
   if (c == '\\')
     return INPT_COMMAND;
 
+  /* Handling function calls. */
+  if (c == 'f')
+  {
+    /* Checking separator */
+    if ((c = getch()) != ':')
+    {
+      fprintf(stderr, RED "getinput error: Invalid function name separator.\n" RESET);
+      exit(1); // Program exit.
+    }
+    /* Setting function name. */
+    c = getfuncname();
+
+    /* Obtaining funcion arguments. */
+    if (c == ' ')
+      getfuncargs();
+
+    return INPT_FUNCTION;
+  }
+
+  /* Handling variables. */
   if (c == '$')
   {
-    for (; i < MAXD - 1 && (isdigit((c = getchar()))); i++)
-      varlit[i] = c;
-    varlit[i] = '\0';
-    /* Constants.  */
-    if (i == 0 && c == 'l')
+    varn1 = getvarn();
+
+    /* Handling constants. */
+    if (varn1 == 'l')
     {
       n = lstack;
       return INPT_NUMBER;
     }
-    /* Checking variable name length. */
-    if (i == 0 || i >= MAXD - 1)
-    {
-      fprintf(stderr, RED "getinput error: Invalid variable name.\n" RESET);
-      exit(1); // Program exit.
-    }
-
-    /* Handling variable name. */
-    varn = atof(varlit);
-    if (varn >= MAXVAR)
-    {
-      fprintf(stderr, RED "getinput error: Invalid variable name.\n" RESET);
-      exit(1); // Program exit.
-    }
 
     /* In case the user is setting the variable. */
-    if (c == ' ')
+    if (getch() == ' ')
     {
-      for (i = 0; i < MAXD - 1 && (isdigit((c = getchar())) || (i == 0 && (c == '+' || c == '-'))); i++)
-        varlit[i] = c;
-
-      /* In case the new value is other variable. */
-      if (i == 0 && c == '$')
+      /* Means the var value is other variable. */
+      if ((c = getch()) == '$')
       {
-        int rvarn;
-
-        /* Checking variable name length. */
-        for (; i < MAXD - 1 && (isdigit((c = getchar()))); i++)
-          varlit[i] = c;
-        varlit[i] = '\0';
-
-        if (i == 0 || i >= MAXD)
-        {
-          fprintf(stderr, RED "getinput error: Invalid variable name.\n" RESET);
-          exit(1); // Program exit.
-        }
-
-        rvarn = atof(varlit);
-        if (rvarn >= MAXVAR)
-        {
-          fprintf(stderr, RED "getinput error: Invalid variable name.\n" RESET);
-          exit(1); // Program exit.
-        }
-        varv = variables[rvarn];
-        printf(YELLOW "%f\n" RESET, varv);
-
-        variables[varn] = varv;
-        return INPT_VARIABLE;
+        varn2 = getvarn();
+        variables[varn1] = variables[varn2];
       }
-      /* Or just a new value. */
-
-      /* Checking variable value length. */
-      if ((i == 0 || (i == 1 && (c == '+' || c == '-'))) || i >= MAXD)
+      else
       {
-        fprintf(stderr, RED "getinput error: Invalid variable value.\n" RESET);
-        exit(1); // Program exit.
+        ungetch(c);
+        varv = getdigit();
+        variables[varn1] = varv;
       }
-      /* In case the new value has decimals. */
-      else if (c == '.')
-      {
-        varlit[i++] = c;
-        for (; isdigit((c = getchar())); i++)
-          varlit[i] = c;
-      }
-      varlit[i] = '\0';
-      variables[varn] = atof(varlit);
       return INPT_VARIABLE;
     }
     /* Or just returning the value of the variable. */
-    n = variables[varn];
+    n = variables[varn1];
     return INPT_NUMBER;
   }
 
   /* Checking if the first non-space character is an operator. */
   if (isoperator(c))
   {
-    int tempop = c;
-    if ((tempop == '+' || tempop == '-') && isdigit((c = getchar())))
-      sign = (tempop == '+') ? 1 : -1;
-    else
-    {
-      op = tempop;          // Sets the operator
-      return INPT_OPERATOR; // Returns the signal
-    }
+    op = c;
+    return INPT_OPERATOR; // Returns the signal
   }
-
-  /* If it is a number, then enter digits inside `digit` array. */
-  if (isdigit(c))
-  {
-    /* Entering the integer part. */
-    do
-    {
-      digit[i++] = c;
-    } while ((i < MAXD - 1) && isdigit((c = getchar())));
-
-    /* The input prompt stoped coused for integer part ending. */
-    if ((i < MAXD - 1) && c == '.')
-    {
-      digit[i++] = c;
-
-      /* Entering the floating part. */
-      while ((i < MAXD - 1) && isdigit((c = getchar())))
-        digit[i++] = c;
-    }
-  }
-  digit[i] = '\0';
 
   if (c == EOF)
     return INPT_EXIT;
-  else if (!isdigit(c) && c != '\n')
+  else if (c != '\n')
   {
     fprintf(stderr, RED "getinput error: Invalid character input.\n" RESET);
     exit(1);
   }
-
-  n = atof(digit) * sign;
-  return INPT_NUMBER;
 }
 
 void resetscr(void)
