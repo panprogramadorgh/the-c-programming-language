@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include <ctype.h>
 #include <stdlib.h>
 
@@ -122,10 +123,6 @@ int funcargscount;
 
 /*
   ### Mejoras a realizar:
-
-  TODO:
-
-  1. Reorganizar funcion getinput
 */
 int main()
 {
@@ -197,6 +194,8 @@ int main()
       }
       else if (input == INPT_FUNCTION)
       {
+        int i; // Iterates over function arguments.
+
         if (comparestr(funcname, "prt")) // Funcion para imprimir variables
         {
           double arg;
@@ -244,6 +243,33 @@ int main()
             exit(1);
           }
           clean();
+        }
+        else if (comparestr(funcname, "sin"))
+        {
+          if (funcargscount != 1)
+          {
+            fprintf(stderr, RED "main error: sin error: Just one argument is required.\n" RESET);
+            exit(1);
+          }
+          printf("%f\n", sin(atof(funcargs[0])));
+        }
+        else if (comparestr(funcname, "cos"))
+        {
+          if (funcargscount != 1)
+          {
+            fprintf(stderr, RED "main error: cos error: Just one argument is required.\n" RESET);
+            exit(1);
+          }
+          printf("%f\n", cos(atof(funcargs[0])));
+        }
+        else if (comparestr(funcname, "tan"))
+        {
+          if (funcargscount != 1)
+          {
+            fprintf(stderr, RED "main error: tan error: Just one argument is required.\n" RESET);
+            exit(1);
+          }
+          printf("%f\n", tan(atof(funcargs[0])));
         }
         else
         {
@@ -393,8 +419,11 @@ double getdigit()
   while ((c = getch()) == ' ')
     ;
   if (c == '+' || c == '-')
+  {
     digitlit[i++] = c;
-  for (; (i < MAXD - 1) && isdigit((c = getch())); i++)
+    c = getch();
+  }
+  for (; (i < MAXD - 1) && isdigit(c); i++, (c = getch()))
     digitlit[i] = c;
   if (c == '.')
   {
@@ -486,7 +515,7 @@ int getch()
   int c;
 
   if (lastchar == '\0')
-    return getch();
+    return getchar();
   c = lastchar;
   lastchar = '\0';
 
@@ -517,9 +546,9 @@ int getinput()
 
   if (isdigit(c) || c == '+' || c == '-')
   {
-    if (isdigit(c))
-      ungetch(c);
+    ungetch(c);
     n = getdigit();
+    // printf(YELLOW "%f\n" RESET, n);
     return INPT_NUMBER;
   }
 
