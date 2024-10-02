@@ -205,7 +205,20 @@ int main()
             fprintf(stderr, RED "main error: prt error: At least one argument is required.\n" RESET);
             exit(1);
           }
-          arg = atof(funcargs[0]);
+
+          if (funcargs[0][0] == '$')
+          {
+            char varnlit[MAXD];
+            for (i = 1; ((i - 1) < (MAXD - 1)) && isdigit(funcargs[0][i]); i++)
+              varnlit[i - 1] = funcargs[0][i];
+            varnlit[i - 1] = '\0';
+
+            arg = atof(varnlit);
+          }
+          else
+          {
+            arg = atof(funcargs[0]);
+          }
           printf("%f\n", arg);
         }
         else if (comparestr(funcname, "head"))
@@ -293,12 +306,7 @@ int main()
   return 0;
 }
 
-/* External variables for push & pop. */
-/* Next stack next. */
-int next = 0;
-/* Stack values. */
-double stack[MAXSTACK];
-/* --------------------------------- */
+/* Generic utilities. */
 
 /* Allows to convert a literal string to a real double number. */
 double atof(const char s[])
@@ -349,6 +357,9 @@ int comparestr(const char a[], const char b[])
 
 /* Modularization utilities. */
 
+/* Determines whether the value returned by the `getvarn` function is a variable or a constant. */
+int isconstant = 0;
+
 /* In charge of getting and settings the function name. The function returns the next character to the name. */
 char getfuncname()
 {
@@ -394,8 +405,10 @@ int getvarn()
 
   /* Handling constants. */
   if (i == 0 && c == 'l')
+  {
+    isconstant = 1;
     return c;
-  /* ------------------ */
+  }
 
   if (i == MAXD - 1 || i == 0)
   {
@@ -403,6 +416,8 @@ int getvarn()
     exit(1); // Program exit.
   }
 
+  isconstant = 0;
+  ungetch(c); // Reserves the exit character for next fn call.
   varname = atof(varnamelit);
   return varname;
 }
@@ -437,7 +452,14 @@ double getdigit()
   return result;
 }
 
-/* --- --- --- --- */
+/* External variables for push & pop. */
+
+/* Next stack next. */
+int next = 0;
+/* Stack values. */
+double stack[MAXSTACK];
+
+/* Utilities for stack. */
 
 void push(double value)
 {
@@ -546,10 +568,12 @@ int getinput()
 
   if (isdigit(c) || c == '+' || c == '-')
   {
+    char temp = c;
     ungetch(c);
     n = getdigit();
-    // printf(YELLOW "%f\n" RESET, n);
-    return INPT_NUMBER;
+    if (n > 0)
+      return INPT_NUMBER;
+    c = temp;
   }
 
   /* Handling command. */
@@ -580,7 +604,11 @@ int getinput()
   {
     varn1 = getvarn();
 
-    /* Handling constants. */
+    /* Handling constants.
+
+      FIXME: Arreglar sistema de constantes
+
+     */
     if (varn1 == 'l')
     {
       n = lstack;
@@ -588,7 +616,7 @@ int getinput()
     }
 
     /* In case the user is setting the variable. */
-    if (getch() == ' ')
+    if ((c = getch()) == ' ')
     {
       /* Means the var value is other variable. */
       if ((c = getch()) == '$')
@@ -620,7 +648,7 @@ int getinput()
     return INPT_EXIT;
   else if (c != '\n')
   {
-    fprintf(stderr, RED "getinput error: Invalid character input.\n" RESET);
+    fprintf(stderr, RED "getinput error: Invalid character input: %c\n" RESET, c);
     exit(1);
   }
 }
