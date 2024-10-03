@@ -1,0 +1,1 @@
+El ejercicio 4-6 ya maneja correctamente dicha situacion. La clave esta en crear una señal de salida del programa cuando se introduce un EOF.

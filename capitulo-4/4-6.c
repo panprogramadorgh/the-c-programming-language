@@ -211,11 +211,14 @@ int main()
           if (funcargs[0][0] == '$')
           {
             char varnlit[MAXD];
+            int varn;
+
             for (i = 1; ((i - 1) < (MAXD - 1)) && isdigit(funcargs[0][i]); i++)
               varnlit[i - 1] = funcargs[0][i];
             varnlit[i - 1] = '\0';
 
-            arg = atof(varnlit);
+            varn = atof(varnlit);
+            arg = variables[varn];
           }
           else
           {
@@ -672,6 +675,7 @@ void resetscr(void)
   printf(BLUE "RPC - Reverse Polish notation based calculator (v1.0).\n" RESET);
   printf(
       "Enter a line break to move to the next argument.\n\
-Type \\n to calculate and step over the next calc\n\
-stack or \\q to calculate and finish.\n");
+Type \\<c> where <c> is a command.\n\
+Type f:<fn> where <fn> is the function name to call.\n\
+Type $<var> where <var> is the variable name.\n");
 }
