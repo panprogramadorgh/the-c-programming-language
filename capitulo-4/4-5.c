@@ -486,7 +486,7 @@ double head(void)
   if (next < 1)
   {
     fprintf(stderr, RED "head error: Empty stack.\n" RESET);
-    return 0.0;
+    exit(1); // Program exit for error cause
   }
   else
     return stack[next - 1];
