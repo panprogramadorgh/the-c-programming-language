@@ -225,7 +225,7 @@ int main()
             /* Handling constants. */
             if (i - 1 == 0 && funcargs[0][i] == CNAME_LASTSTACK)
               arg = lstack;
-            if (i - 1 == 0 && funcargs[0][i] == CNAME_PI)
+            else if (i - 1 == 0 && funcargs[0][i] == CNAME_PI)
               arg = CVALUE_PI / pow(10, 6);
             else if ((i - 1 == 0) || (i == MAXD - 1))
             {
