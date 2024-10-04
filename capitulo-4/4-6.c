@@ -56,9 +56,15 @@ enum commands
   CMD_CLRSCR = 'c' // Clears the screen
 };
 
-enum constants
+enum constantNames
 {
-  CONST_LASTSTACK = 'l'
+  CNAME_LASTSTACK = 'l', // For each calc stack the value is different.
+  CNAME_PI = 'p'         // 3141592
+};
+
+enum constantValues
+{
+  CVALUE_PI = 3141592
 };
 
 /* Utilities. */
@@ -216,9 +222,21 @@ int main()
             for (i = 1; ((i - 1) < (MAXD - 1)) && isdigit(funcargs[0][i]); i++)
               varnlit[i - 1] = funcargs[0][i];
             varnlit[i - 1] = '\0';
-
-            varn = atof(varnlit);
-            arg = variables[varn];
+            /* Handling constants. */
+            if (i - 1 == 0 && funcargs[0][i] == CNAME_LASTSTACK)
+              arg = lstack;
+            if (i - 1 == 0 && funcargs[0][i] == CNAME_PI)
+              arg = CVALUE_PI / pow(10, 6);
+            else if ((i - 1 == 0) || (i == MAXD - 1))
+            {
+              fprintf(stderr, RED "getinput error: Invalid variable name.\n" RESET);
+              exit(1); // Program exit.
+            }
+            else
+            {
+              varn = atof(varnlit);
+              arg = variables[varn];
+            }
           }
           else
           {
@@ -363,7 +381,7 @@ int comparestr(const char a[], const char b[])
 /* Modularization utilities. */
 
 /* Determines whether the value returned by the `getvarn` function is a variable or a constant. */
-int isconstant = 0;
+int iscvarn = 0;
 
 /* In charge of getting and settings the function name. The function returns the next character to the name. */
 char getfuncname()
@@ -409,9 +427,14 @@ int getvarn()
   varnamelit[i] = '\0';
 
   /* Handling constants. */
-  if (i == 0 && c == 'l')
+  if (i == 0 && c == CNAME_LASTSTACK)
   {
-    isconstant = 1;
+    iscvarn = 1;
+    return c;
+  }
+  else if (i == 0 && c == CNAME_PI)
+  {
+    iscvarn = 1;
     return c;
   }
 
@@ -421,7 +444,7 @@ int getvarn()
     exit(1); // Program exit.
   }
 
-  isconstant = 0;
+  iscvarn = 0;
   ungetch(c); // Reserves the exit character for next fn call.
   varname = atof(varnamelit);
   return varname;
@@ -578,6 +601,8 @@ int getinput()
 
   i = 0;
 
+  // printf(YELLOW "Ejecucion.\n" RESET);
+
   /* Ignore initial spaces or tabs. */
   while (isspace((c = getch())))
     ;
@@ -620,14 +645,25 @@ int getinput()
   {
     varn1 = getvarn();
 
-    /* Handling constants.
-
-      FIXME: Arreglar sistema de constantes
-
-     */
-    if (varn1 == 'l')
+    /* Handling constants. */
+    if (iscvarn && varn1 == CNAME_LASTSTACK)
     {
+      if (getch() != '\n')
+      {
+        fprintf(stderr, RED "getinput error: Cannot change constant values.\n" RESET);
+        exit(1);
+      }
       n = lstack;
+      return INPT_NUMBER;
+    }
+    if (iscvarn && varn1 == CNAME_PI)
+    {
+      if (getch() != '\n')
+      {
+        fprintf(stderr, RED "getinput error: Cannot change constant values.\n" RESET);
+        exit(1);
+      }
+      n = CVALUE_PI / pow(10, 6);
       return INPT_NUMBER;
     }
 
@@ -638,7 +674,16 @@ int getinput()
       if ((c = getch()) == '$')
       {
         varn2 = getvarn();
-        variables[varn1] = variables[varn2];
+
+        /* Handling constants. */
+        if (iscvarn && varn2 == CNAME_LASTSTACK)
+        {
+          variables[varn1] = lstack;
+        }
+        else if (iscvarn && varn2 == CNAME_PI)
+          variables[varn1] = CVALUE_PI / pow(10, 6);
+        else
+          variables[varn1] = variables[varn2];
       }
       else
       {
