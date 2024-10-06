@@ -1,24 +1,36 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
-void sort(int arr[], int from, int to);
+enum order
+{
+  ASC,
+  DESC,
+};
+
+/* Permite ordenar un array numerico. */
+void quicksort(int arr[], int from, int to, enum order o);
+
+/* Rellena el array `arr` con numeros aleatorios (1 - 100) */
+void rfill(int arr[], int max);
 
 /* Implementacion propia de quicksort. */
 int main()
 {
-  int digits[] = {5,
-                  4,
-                  3,
-                  2,
-                  1};
+  int size = 128;
+  int *digits = (int *)malloc(sizeof(int) * size);
+  int i;
 
-  sort(digits, 0, 5);
-  for (int i = 0; i < 5; i++)
-    printf("%d\n", digits[i]);
+  rfill(digits, size);
+
+  quicksort(digits, 0, size, ASC);
+  for (i = 0; i < size; i++)
+    printf("%d,\n", digits[i]);
 
   return 0;
 }
 
-void sort(int arr[], int from, int to)
+void quicksort(int arr[], int from, int to, enum order o)
 {
   if (from >= to)
     return;
@@ -27,17 +39,30 @@ void sort(int arr[], int from, int to)
   int bigger[to - from], bi = 0;
   int smaller[to - from], si = 0;
 
-  for (int i = from; i < to; i++)
+  for (int i = from + 1; i < to; i++)
     if (arr[i] >= pivot)
       bigger[bi++] = arr[i];
     else
       smaller[si++] = arr[i];
 
   for (int i = 0; i < si; i++)
-    arr[from + i] = smaller[i];
+    arr[from + i + (o == ASC ? 0 : bi)] = smaller[i];
+  arr[from + (o == ASC ? si : bi)] = pivot;
   for (int i = 0; i < bi; i++)
-    arr[from + si + i] = bigger[i];
+    arr[from + i + (o == ASC ? si + 1 : 0)] = bigger[i];
 
-  sort(arr, from, from + si);
-  sort(arr, from + si + 1, from + to);
+  quicksort(arr, from, from + (o == ASC ? si : bi), o);
+  quicksort(arr, from + (o == ASC ? si + 1 : bi + 1), to, o);
+}
+
+void rfill(int arr[], int max)
+{
+  int n;
+
+  srand(time(NULL));
+  for (int i = 0; i < max; i++)
+  {
+    n = rand() % 100;
+    arr[i] = n;
+  }
 }
