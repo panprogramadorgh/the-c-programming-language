@@ -26,13 +26,22 @@ int getint(int *n)
 {
   char digit[MAXS];
   int i, j, c;
-  int result;
+  int sign, result;
 
-  for (i = 0; i < MAXS - 1 && isdigit((c = getchar())); i++)
+  while (isspace(c = getchar()))
+    ;
+
+  sign = (c == '-') ? -1 : 1;
+  if (c == '+' || c == '-')
+  {
+    c = getchar();
+  }
+
+  for (i = 0; i < MAXS - 1 && isdigit(c); i++, (c = getchar()))
     digit[i] = c;
   digit[i] = '\0';
 
-  if (c == EOF)
+  if (c == EOF || i == 0)
     return EOF;
 
   while (c != '\n')
@@ -45,6 +54,6 @@ int getint(int *n)
     j++;
   } while (j < i);
 
-  *n = result;
+  *n = result * sign;
   return 0;
 }
