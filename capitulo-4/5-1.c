@@ -20,7 +20,7 @@ int getch();
 /* Permite devolver un caracter a la entrada. */
 void ungetch(int c);
 
-/* Recreacion programa de ejemplo pagina 117 */
+/* Ejercicio 5-1 */
 int main()
 {
   int numbers[100];
