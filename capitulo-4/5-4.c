@@ -25,7 +25,7 @@ int main()
 
 int strcompare(char *a, char *b)
 {
-  for (; *a == *b && *a != '\0'; a++, b++)
+  for (; *a == *b && *a; a++, b++)
     ;
   return *a - *b;
 }
