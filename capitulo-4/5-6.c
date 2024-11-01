@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <ctype.h>
 #include <math.h>
 
@@ -15,13 +16,26 @@ int atoi(char *s);
 double atof(char *s);
 
 /* Converts a integer number into its literal string representation.  */
-void itoa(int n, char *dgt);
+void itoa(long int n, char *dgt);
+
+/* Converts a double number into its literal string representation. */
+void ftoa(double n, char *dgt);
+
+/* Reverses the literal string s. */
+void reverse(char *s);
+
+/* Returns the index of seq inside s.  */
+int strindex(char *s, char *seq);
 
 int main()
 {
-  char digit[MAXLN];
-  itoa(-123, digit);
+  char digit[100];
+
+  ftoa(-3.1415, digit);
   printf("%s\n", digit);
+
+  int foo = strindex(digit, "14");
+  printf("%d\n", foo);
 
   return 0;
 }
@@ -101,15 +115,70 @@ double atof(char *s)
   return (ipart + fpart) * sign;
 }
 
-void itoa(int n, char *dgt)
+void itoa(long int n, char *dgt)
 {
+  static int index = 0;
+  static int max = 0;
+
   if (n < 0)
   {
     *dgt++ = '-';
     n = -n;
   }
+
   if (n / 10)
-    itoa(n / 10, dgt + 1);
-  *dgt++ = n % 10 + '0';
-  *dgt = '\0';
+  {
+    max++;
+    itoa(n / 10, dgt);
+    index++;
+  }
+  *(dgt + index) = n % 10 + '0';
+  if (index == max)
+  {
+    *(dgt + index + 1) = '\0';
+    index = 0;
+  }
+}
+
+void ftoa(double n, char *dgt)
+{
+  long int ipart = (long int)n * (n < 0 ? -1 : 1);
+  long int fpart = (long int)((n - (ipart * (n < 0 ? -1 : 1))) * (n < 0 ? -1 : 1) * pow(10, __DBL_DIG__));
+
+  if (n < 0)
+    *dgt++ = '-';
+  itoa(ipart, dgt);
+  dgt += strlen(dgt);
+  *dgt++ = '.';
+  itoa(fpart, dgt);
+}
+
+void reverse(char *s)
+{
+  char *e = s, t;
+  while (*e)
+    e++;
+  for (e--; s < e; s++, e--)
+    t = *e, *e = *s, *s = t;
+}
+
+int strindex(char *s, char *seq)
+{
+  char *pivot = s;
+  char *ch = seq;
+  int seq_len;
+
+  while (*ch)
+    *ch++;
+  seq_len = ch - seq;
+
+  while (*pivot)
+  {
+    for (ch = pivot; (ch - pivot < seq_len) && *ch == *(seq + (ch - pivot)); ch++)
+      ;
+    if (ch - pivot > 0 && ch - pivot == seq_len)
+      return pivot - s;
+    pivot++;
+  }
+  return -1;
 }
