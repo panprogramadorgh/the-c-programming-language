@@ -53,29 +53,20 @@ void writelines(char *lines[LINE_LENGTH], int nlines)
     printf("%s\n", *lines++);
 }
 
-void qsort(char *lines[LINE_LENGTH], int from, int to)
+void qsort(char *v[], int left, int right)
 {
-  if (from >= to)
-    return;
-
-  char *pivot = lines[from];
-  char *bigger[to - from], bi = 0;
-  char *smaller[to - from], si = 0;
-
-  for (int i = from + 1; i < to; i++)
-    if (strcmp(lines[i], pivot) > 0)
-      bigger[bi++] = lines[i];
-    else
-      smaller[si++] = lines[i];
-
-  for (int i = 0; i < si; i++)
-    lines[from + i + bi] = smaller[i];
-  lines[from + bi] = pivot;
-  for (int i = 0; i < bi; i++)
-    lines[from + i] = bigger[i];
-
-  qsort(lines, from, from + bi);
-  qsort(lines, from + bi + 1, to);
+  int i, last;
+  void swap(char *v[], int i, int j);
+  if (left >= right) /* no hace nada si el arreglo contiene */
+    return;          /* menos de dos elementos */
+  swap(v, left, (left + right) / 2);
+  last = left;
+  for (i = left + 1; i <= right; i++)
+    if (strcmp(v[i], v[left]) < 0)
+      swap(v, ++last, i);
+  swap(v, left, last);
+  qsort(v, left, last - 1);
+  qsort(v, last + 1, right);
 }
 
 int getln(char *line, int max)
@@ -88,4 +79,11 @@ int getln(char *line, int max)
   *line = '\0';
 
   return len;
+}
+
+void swap(char *v[], int i, int j)
+{
+  char *temp = v[i];
+  v[i] = v[j];
+  v[j] = temp;
 }
