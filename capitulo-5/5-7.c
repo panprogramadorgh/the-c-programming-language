@@ -13,6 +13,7 @@ void qsort(char *lines[LINE_LENGTH], int from, int to);
 // Almacena punteros al comienzo de todas las lineas.
 char *line_ptrs[MAX_LINES];
 
+// 5-7 Ahora readlines obtiene un arreglo de pila pasado desde main con la peculiaridad de que para el manejo de las lineas se construye un arreglo a punteros de caracteres.
 int main()
 {
   char lines[MAX_LINES][LINE_LENGTH]; // Asignar memoria de pila
