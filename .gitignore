@@ -1,4 +1,6 @@
 main
 .vscode
 lib*
-test.c
+test.*
+*.test.*
+test
