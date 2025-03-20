@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define BUFFER_SIZE 1024 // 1KiB size
+#define BUFFER_SIZE 20
 
 // String related macros
 #define STRING_ERROR_ALLOC "string memory error: could not create internal memory block"
@@ -40,25 +40,90 @@ unsigned char alloc_string(String *str, const size_t initial_size)
 // Frees resource from `str` string pointer
 void free_string(String *str)
 {
-  str->pos = 0;
   free(str->mem);
+  str->pos = 0;
+  str->size = 0;
+}
+
+/// @brief Moves internal string memory block ptr
+/// @param str
+/// @param pos
+/// @return
+// -1 -- Position is out of the size of the string
+// Any other integer value -- Distance from current ptr position to previous one
+size_t move_string(String *str, size_t pos)
+{
+  if (pos >= str->size)
+    return -1;
+  size_t prev_pos = str->pos;
+  str->pos = pos;
+  return abs(str->pos - prev_pos);
+}
+
+/// @brief Resizes the internal string memory block. After memory resizing it's important to update the string pointer position.
+/// @param str
+/// @param size
+/// @return
+// -1 -- Internal memory reallocation error
+// Any other integer number -- Size difference between current and previous size
+size_t resize_string(String *str, size_t size)
+{
+  str->mem = realloc(str->mem, size);
+  if (!str->mem)
+    return -1;
+
+  size_t prev_size = str->size;
+  str->size = size;
+
+  return abs(str->size - prev_size);
+}
+
+/// @brief Reads internal string memory block starting from string pos into `buffer`
+/// @param buffer
+/// @param max_buffer_size
+/// @param str
+/// @return Readen bytes
+size_t read_string(char *buffer, size_t max_buffer_size, String *str)
+{
+  size_t prev_pos = str->pos;
+  while (str->pos < str->size && str->pos < max_buffer_size && (buffer[str->pos] = str->mem[str->pos]))
+    str->pos++;
+  return str->pos - prev_pos;
 }
 
 /// @brief Writes buffer data of `buffer_size` length on internal string memory block
-/// @param str 
-/// @param buffer 
-/// @param buffer_size 
-/// @return The number of bytes written
-size_t write_string(String *str, const char *buffer, const size_t buffer_size)
+/// @param str
+/// @param buffer
+/// @param buffer_size
+/// @return
+// -1 -- Internal memory reallocation error
+// Any integer number -- The number of bytes written
+size_t write_string_from_buffer(String *str, const char *buffer, const size_t buffer_size)
 {
-  int i = str->pos;
-  while (i < str->size && (i - str->pos) < buffer_size)
+  // Internal memory resizement so then we can write data comming from buffer
+  if (str->pos + buffer_size - str->size > 0) // Incrementing the memory block size
   {
-    str->mem[i] = buffer[i];
-    i++;
+    size_t new_size = (str->pos + buffer_size) * 2;
+    if (resize_string(str, new_size) < 0)
+      return -1;
   }
-  str->pos = i;
-  return str->pos;
+  // TODO: Check and ensure correct memory resizing
+  else if (str->size / (str->pos + buffer_size) > 1) // Decreases the memory block size
+  {
+    size_t greater_multiple = str->size / (str->pos + buffer_size);
+    size_t new_size = greater_multiple * (str->pos + buffer_size);
+
+    if (resize_string(str, new_size) < 0)
+      return -1;
+  }
+
+  size_t prev_pos = str->pos;
+  while (prev_pos < str->size && (str->pos - prev_pos) < buffer_size)
+  {
+    str->mem[str->pos] = buffer[str->pos];
+    str->pos++;
+  }
+  return str->pos - prev_pos;
 }
 
 /// @brief Copies `dest` to `orig`
@@ -72,31 +137,25 @@ unsigned char copy_string(String *dest, const String *orig)
   // Frees the internal destiny string memory block (if size is greater than 0)
   if (dest->size)
     free_string(dest);
-  
+
   // New memory block is allocated
   dest->mem = (char *)malloc(sizeof(char) * orig->size);
   if (!dest->mem)
-    return 1; 
+    return 1;
+  dest->size = orig->size;
 
   // Finaly we copy the internal memory block into dest
-  int i = 0;
-  while (dest->mem[i] = orig->mem[i])
-    i++;
-  
-  // Once both internal memory blocks contains the same, size and pos fields are set
-  dest->size = orig->size;
-  dest->pos = i;
+  size_t current_pos = 0;
+  while (dest->mem[current_pos] = orig->mem[current_pos])
+    current_pos++;
 
   return 0;
 }
 
-
-// TODO: Create print string function which reads internal heap memory block starting at pos and goes up until size is reached
-
 // Low level functions and utilities
 
 /// @brief Same use as with strlen standard library utility
-/// @param line 
+/// @param line
 /// @return Line length as an integer
 size_t chcount_line(const char *line)
 {
@@ -117,7 +176,6 @@ void print_line(const char *line)
 
 // ------------------------
 
-
 int main()
 {
   String str;
@@ -130,10 +188,11 @@ int main()
     perror(STRING_ERROR_ALLOC);
     exit(errno);
   }
-  write_string(&str, str_init, str_init_len);
+  printf("%ld\n", str.size);
+  write_string_from_buffer(&str, str_init, str_init_len);
+  move_string(&str, 0);
+  printf("%ld\n", str.size);
 
-  print_line(str.mem);
   free_string(&str);
-
   return EXIT_SUCCESS;
 }
